@@ -1,0 +1,49 @@
+name: Check
+
+on:
+  push:
+
+jobs:
+  validate:
+    name: Validate Nix
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+      - run: nix flake check
+
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+      - run: nix develop -c cargo check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+      - run: nix develop -c cargo test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+      # See: https://github.com/rust-lang/rust-clippy/issues/1209
+      - run: RUSTFLAGS="-D warnings" nix develop -c cargo clippy --all-targets
+
+  fmt:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+      - run: nix develop -c cargo fmt --check
