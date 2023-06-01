@@ -9,8 +9,8 @@ pub mod slack;
 async fn main() {
     let msg = Message {
         channel: ChannelName("playground".into()),
-        title: "A title".into(),
-        desc: "*Unformatted text.* 😄".into(),
+        title: "🚀 Web".into(),
+        desc: "Fix `Foo`".into(),
         links: vec![
             Url::parse("https://unsplash.com").unwrap(),
             Url::parse(

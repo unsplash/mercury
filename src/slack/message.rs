@@ -51,7 +51,7 @@ async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), F
     let res: MessageResponse = post("/chat.postMessage")
         .json(&MessageRequest {
             channel: channel_id,
-            blocks: fmt_msg(&msg),
+            blocks: build_blocks(&msg),
         })
         .send()
         .await?
@@ -72,16 +72,15 @@ fn is_not_in_channel(res: &Failure) -> bool {
     }
 }
 
-fn fmt_msg(msg: &Message) -> Vec<Block> {
+fn build_blocks(msg: &Message) -> Vec<Block> {
     let mut xs = Vec::with_capacity(2);
 
-    xs.push(Block::Header(msg.title.clone()));
-    xs.push(Block::Plaintext(msg.desc.clone()));
+    xs.push(Block::Plaintext(format!("{}: {}", msg.title, msg.desc)));
 
     if !msg.links.is_empty() {
         // We shouldn't be able to both parse and print something as a `Url` and
         // also achieve mrkdwn formatting.
-        xs.push(Block::Mrkdwn(fmt_links(&msg.links)));
+        xs.push(Block::Context(fmt_links(&msg.links)));
     }
 
     xs
@@ -91,7 +90,9 @@ fn fmt_links(links: &Vec<Url>) -> String {
     let mut out = String::new();
 
     for link in links {
-        out.push_str("\n• ");
+        // At time of writing this doesn't cause any extra whitespace at the top
+        // of the links in a context block.
+        out.push_str("\n");
         out.push_str(&fmt_link(&link));
     }
 
