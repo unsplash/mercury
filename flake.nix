@@ -14,6 +14,9 @@
             cargo
             clippy
             rustfmt
+
+            pkg-config
+            openssl
           ];
         };
       });
