@@ -34,13 +34,13 @@ struct ChannelMeta {
     name: ChannelName,
 }
 
-/// https://api.slack.com/methods/conversations.join#args
+/// <https://api.slack.com/methods/conversations.join#args>
 #[derive(Serialize)]
 struct JoinRequest<'a> {
     channel: &'a ChannelId,
 }
 
-/// https://api.slack.com/methods/conversations.join#examples
+/// <https://api.slack.com/methods/conversations.join#examples>
 #[derive(Deserialize)]
 struct JoinResponse {
     ok: bool,
@@ -71,7 +71,7 @@ pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, Fai
         .cloned()
 }
 
-/// https://api.slack.com/methods/conversations.list#args
+/// <https://api.slack.com/methods/conversations.list#args>
 #[derive(Serialize)]
 struct ListRequest {
     /// Maximum supported is 1000, but a limit of 200 is "recommended".
@@ -81,7 +81,7 @@ struct ListRequest {
     cursor: Option<String>,
 }
 
-/// https://api.slack.com/methods/conversations.list#examples
+/// <https://api.slack.com/methods/conversations.list#examples>
 #[derive(Deserialize)]
 struct ListResponse {
     ok: bool,

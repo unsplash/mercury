@@ -9,14 +9,14 @@ pub struct Message {
     pub desc: String,
 }
 
-/// https://api.slack.com/methods/chat.postMessage#args
+/// <https://api.slack.com/methods/chat.postMessage#args>
 #[derive(Serialize)]
 struct MessageRequest<'a> {
     channel: &'a ChannelId,
     text: String,
 }
 
-/// https://api.slack.com/methods/chat.postMessage#examples
+/// <https://api.slack.com/methods/chat.postMessage#examples>
 #[derive(Deserialize)]
 struct MessageResponse {
     ok: bool,
