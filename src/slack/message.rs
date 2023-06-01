@@ -18,7 +18,7 @@ struct MessageRequest<'a> {
 
 /// https://api.slack.com/methods/chat.postMessage#examples
 #[derive(Deserialize)]
-pub struct MessageResponse {
+struct MessageResponse {
     ok: bool,
     error: Option<String>,
 }

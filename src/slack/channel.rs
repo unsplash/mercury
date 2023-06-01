@@ -92,7 +92,7 @@ struct ListResponse {
 
 #[serde_as]
 #[derive(Deserialize)]
-pub struct PaginationMeta {
+struct PaginationMeta {
     #[serde_as(as = "NoneAsEmptyString")]
     next_cursor: Option<String>,
 }
