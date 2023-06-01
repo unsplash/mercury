@@ -2,11 +2,18 @@ use super::{api::*, channel::*};
 use crate::error::Failure;
 use serde::{Deserialize, Serialize};
 
+/// An opinionated, structured message.
+pub struct Message {
+    pub channel: ChannelName,
+    pub title: String,
+    pub desc: String,
+}
+
 /// https://api.slack.com/methods/chat.postMessage#args
 #[derive(Serialize)]
 struct MessageRequest<'a> {
     channel: &'a ChannelId,
-    text: &'a String,
+    text: String,
 }
 
 /// https://api.slack.com/methods/chat.postMessage#examples
@@ -17,8 +24,8 @@ pub struct MessageResponse {
 }
 
 /// Try to post a message in a channel, joining it if necessary.
-pub async fn post_message(channel_name: ChannelName, msg: &String) -> Result<(), Failure> {
-    let channel_id = get_channel_id(channel_name).await?;
+pub async fn post_message(msg: &Message) -> Result<(), Failure> {
+    let channel_id = get_channel_id(&msg.channel).await?;
 
     let res = try_post_message(&channel_id, &msg).await;
 
@@ -38,9 +45,12 @@ pub async fn post_message(channel_name: ChannelName, msg: &String) -> Result<(),
 }
 
 /// Try to post a message assuming we've already joined the channel.
-async fn try_post_message(channel: &ChannelId, msg: &String) -> Result<(), Failure> {
+async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), Failure> {
     let res: MessageResponse = post("/chat.postMessage")
-        .json(&MessageRequest { channel, text: msg })
+        .json(&MessageRequest {
+            channel: channel_id,
+            text: build_text(&msg),
+        })
         .send()
         .await?
         .json()
@@ -58,4 +68,8 @@ fn is_not_in_channel(res: &Failure) -> bool {
         Failure::SlackAPIResponseError(e) => e == "not_in_channel",
         _ => false,
     }
+}
+
+fn build_text(msg: &Message) -> String {
+    format!("*{}*\n{}", msg.title, msg.desc)
 }

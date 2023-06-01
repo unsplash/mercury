@@ -1,12 +1,18 @@
 use slack::channel::ChannelName;
-use slack::message::post_message;
+use slack::message::{post_message, Message};
 
 pub mod error;
 pub mod slack;
 
 #[tokio::main]
 async fn main() {
-    let res = post_message(ChannelName("playground".into()), &"Ciao! - Mercury".into()).await;
+    let msg = Message {
+        channel: ChannelName("playground".into()),
+        title: "A title".into(),
+        desc: "And a description.".into(),
+    };
+
+    let res = post_message(&msg).await;
 
     match res {
         Ok(_) => println!("ok"),
