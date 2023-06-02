@@ -1,5 +1,6 @@
 use dotenvy::dotenv;
 use std::net::SocketAddr;
+use tracing::warn;
 
 pub mod error;
 mod router;
@@ -7,7 +8,18 @@ pub mod slack;
 
 #[tokio::main]
 async fn main() {
-    dotenv().expect(".env not found");
+    // We currently only have tracing (to stdout) for server responses and
+    // manual traces. It'd be nice to get tracing for client requests as well:
+    //   https://github.com/seanmonstar/reqwest/issues/155
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .compact()
+        .init();
+
+    let has_dotenv = dotenv().is_ok();
+    if !has_dotenv {
+        warn!("No .env found");
+    }
 
     let port: u16 = std::env::var("PORT")
         .expect("PORT environment variable not found")
@@ -18,14 +30,6 @@ async fn main() {
     slack::auth::TOKEN.set(token).unwrap();
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-
-    // We currently only have tracing (to stdout) for server responses and
-    // manual traces. It'd be nice to get tracing for client requests as well:
-    //   https://github.com/seanmonstar/reqwest/issues/155
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .compact()
-        .init();
 
     axum::Server::bind(&addr)
         .serve(router::new().into_make_service())
