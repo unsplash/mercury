@@ -75,7 +75,7 @@ pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, Fai
 #[derive(Serialize)]
 struct ListRequest {
     /// Maximum supported is 1000, but a limit of 200 is "recommended".
-    limit: i16,
+    limit: u16,
     /// Doesn't affect `limit`.
     exclude_archived: bool,
     cursor: Option<String>,
