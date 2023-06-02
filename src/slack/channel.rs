@@ -66,7 +66,11 @@ pub async fn join_channel(channel: &ChannelId) -> Result<(), Failure> {
 pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, Failure> {
     let map = get_channel_map().await?;
 
-    map.get(channel_name)
+    // Channel names can't contain hashes, so by doing this we can support
+    // consumers supplying (or not) a leading hash.
+    let normalised_channel_name = ChannelName(channel_name.0.trim_start_matches("#").into());
+
+    map.get(&normalised_channel_name)
         .ok_or(Failure::SlackUnknownChannel(channel_name.clone()))
         .cloned()
 }
