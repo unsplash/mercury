@@ -7,7 +7,7 @@ use url::Url;
 ///
 /// It would be nontrivially difficult to support multiple inputs (vectors) with
 /// `application/x-www-form-urlencoded` bodies:
-///   https://github.com/nox/serde_urlencoded/issues/52
+///   <https://github.com/nox/serde_urlencoded/issues/52>
 #[derive(Deserialize)]
 pub struct Message {
     pub channel: ChannelName,

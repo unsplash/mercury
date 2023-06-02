@@ -6,7 +6,7 @@ use serde::{ser, Serialize};
 ///
 /// - It doesn't allow one to mix rich text and plaintext in a single "section".
 /// - Accessory buttons insist upon on onward webhook URL.
-///   - https://stackoverflow.com/questions/64107123/can-you-use-slack-buttons-non-interactively
+///   - <https://stackoverflow.com/questions/64107123/can-you-use-slack-buttons-non-interactively>
 /// - The messages tend towards being very large.
 ///
 /// Considering the alternative, "attachments", are deprecated, we'll make do
