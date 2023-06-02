@@ -8,6 +8,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
         app = pkgs.rustPlatform.buildRustPackage {
           pname = "mercury";
           version = "0.0.0";
@@ -20,18 +21,29 @@
             openssl
           ];
         };
+
+        img = pkgs.dockerTools.streamLayeredImage {
+          name = "mercury";
+          tag = "latest";
+          contents = [ app pkgs.cacert ];
+          config.Cmd = [ "${app}/bin/mercury" ];
+        };
       in
       {
-        devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            cargo
-            clippy
-            rustfmt
-          ];
+        devShells = rec {
+          default = pkgs.mkShell {
+            inputsFrom = [ app ];
 
-          inputsFrom = [ app ];
+            nativeBuildInputs = with pkgs; [
+              clippy
+              rustfmt
+            ];
+          };
         };
 
-        packages.default = app;
+        packages = {
+          default = app;
+          dockerImage = img;
+        };
       });
 }

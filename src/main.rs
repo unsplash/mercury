@@ -28,7 +28,7 @@ async fn main() {
     let token = std::env::var("SLACK_TOKEN").expect("SLACK_TOKEN environment variable not found");
     slack::auth::TOKEN.set(token).unwrap();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     info!("Listening on {}", addr.to_string());
 
     axum::Server::bind(&addr)

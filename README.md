@@ -31,6 +31,13 @@ Mercury is written in Rust. This offers a few benefits including:
 
 ### Building
 
-The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/). This is recommended for development. Alternatively it's also possible to build directly with Nix.
+The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/), which is recommended for development.
+
+It's also possible to build directly with Nix. This can be leveraged to build a hermetic Docker image. Example:
+
+```console
+$ nix build .#dockerImage && ./result | podman load
+$ podman run --rm -p 80 -e SLACK_TOKEN mercury
+```
 
 [^1]: https://en.wikipedia.org/wiki/Mercury_(mythology)
