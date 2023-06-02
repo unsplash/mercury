@@ -4,12 +4,17 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 /// An opinionated, structured message.
+///
+/// It would be nontrivially difficult to support multiple inputs (vectors) with
+/// `application/x-www-form-urlencoded` bodies:
+///   https://github.com/nox/serde_urlencoded/issues/52
+#[derive(Deserialize)]
 pub struct Message {
     pub channel: ChannelName,
     pub title: String,
     pub desc: String,
-    pub links: Vec<Url>,
-    pub ccs: Vec<Mention>,
+    pub link: Option<Url>,
+    pub cc: Option<Mention>,
 }
 
 /// <https://api.slack.com/methods/chat.postMessage#args>
@@ -78,45 +83,21 @@ fn build_blocks(msg: &Message) -> Vec<Block> {
 
     xs.push(Block::Plaintext(format!("{}: {}", msg.title, msg.desc)));
 
-    if !msg.ccs.is_empty() {
-        xs.push(Block::Mrkdown(fmt_ccs(&msg.ccs)));
+    if let Some(cc) = &msg.cc {
+        xs.push(Block::Mrkdown(fmt_mention(cc)));
     }
 
-    if !msg.links.is_empty() {
+    if let Some(link) = &msg.link {
         // We shouldn't be able to both parse and print something as a `Url` and
         // also achieve mrkdwn formatting.
-        xs.push(Block::Context(fmt_links(&msg.links)));
+        xs.push(Block::Context(fmt_link(link)));
     }
 
     xs
 }
 
-fn fmt_ccs(ccs: &Vec<Mention>) -> String {
-    let mut out = String::from("cc");
-
-    for cc in ccs {
-        out.push(' ');
-        out.push_str(&fmt_mention(cc));
-    }
-
-    out
-}
-
 fn fmt_mention(m: &Mention) -> String {
-    format!("<!subteam^{}>", to_user_group_id(m))
-}
-
-fn fmt_links(links: &Vec<Url>) -> String {
-    let mut out = String::new();
-
-    for link in links {
-        // At time of writing this doesn't cause any extra whitespace at the top
-        // of the links in a context block.
-        out.push('\n');
-        out.push_str(&fmt_link(link));
-    }
-
-    out
+    format!("cc <!subteam^{}>", to_user_group_id(m))
 }
 
 fn fmt_link(u: &Url) -> String {
