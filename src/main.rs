@@ -22,9 +22,8 @@ async fn main() {
     }
 
     let port: u16 = std::env::var("PORT")
-        .expect("PORT environment variable not found")
-        .parse()
-        .expect("Could not parse PORT to u16");
+        .map(|x| x.parse().expect("Could not parse PORT to u16"))
+        .unwrap_or(80);
 
     let token = std::env::var("SLACK_TOKEN").expect("SLACK_TOKEN environment variable not found");
     slack::auth::TOKEN.set(token).unwrap();
