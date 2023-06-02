@@ -16,11 +16,11 @@ curl <host>/api/v1/slack -X POST \
   -d link="https://github.com/unsplash/mercury"
 ```
 
-## Security
+### Security
 
 Like Otto before it, Mercury is currently unauthenticated. Whilst this is the case, our Slack instance's peace is protected essentially only by obscurity. It is therefore recommended to avoid using Mercury in public repos.
 
-## Tech
+## Contributing
 
 Mercury is written in Rust. This offers a few benefits including:
 
@@ -28,5 +28,9 @@ Mercury is written in Rust. This offers a few benefits including:
 - A strong, expressive type system inspired by functional languages.
 - More approachable to contributors outside of the Web team than something like Haskell.
 - Acts as a test bed for Rust at Unsplash; timely with Fastly C@E in mind.
+
+### Building
+
+The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/). This is recommended for development. Alternatively it's also possible to build directly with Nix.
 
 [^1]: https://en.wikipedia.org/wiki/Mercury_(mythology)
