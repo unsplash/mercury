@@ -27,13 +27,9 @@
             cargo
             clippy
             rustfmt
-
-            pkg-config
           ];
 
-          buildInputs = with pkgs; [
-            openssl
-          ];
+          inputsFrom = [ app ];
         };
 
         packages.default = app;
