@@ -1,0 +1,24 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v21
+      # Docker is preinstalled.
+      - run: nix build .#dockerImage && ./result | docker load
+      - run: |
+          echo ${{ secrets.HEROKU_API_KEY }} | docker login -u=_ --password-stdin registry.heroku.com
+          docker tag mercury registry.heroku.com/unsplash-mercury/web
+          docker push registry.heroku.com/unsplash-mercury/web
+      # The Heroku CLI implicitly uses `HEROKU_API_KEY`.
+      - run: nix develop .#ops -c heroku container:release -a unsplash-mercury web
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}

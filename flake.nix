@@ -39,6 +39,14 @@
               rustfmt
             ];
           };
+
+          ops = pkgs.mkShell {
+            inputsFrom = [ app ];
+
+            nativeBuildInputs = with pkgs; [
+              heroku
+            ];
+          };
         };
 
         packages = {
