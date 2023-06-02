@@ -16,6 +16,9 @@
             rustfmt
 
             pkg-config
+          ];
+
+          buildInputs = with pkgs; [
             openssl
           ];
         };
