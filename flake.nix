@@ -44,7 +44,11 @@
             inputsFrom = [ app ];
 
             nativeBuildInputs = with pkgs; [
-              flyctl
+              (flyctl.overrideAttrs (_: {
+                # The derivation includes a test run that takes a few minutes to
+                # complete in CI.
+                doCheck = false;
+              }))
             ];
           };
         };
