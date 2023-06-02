@@ -66,7 +66,7 @@ pub async fn join_channel(channel: &ChannelId) -> Result<(), Failure> {
 pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, Failure> {
     let map = get_channel_map().await?;
 
-    map.get(&channel_name)
+    map.get(channel_name)
         .ok_or(Failure::SlackUnknownChannel(channel_name.clone()))
         .cloned()
 }
@@ -121,7 +121,7 @@ async fn get_channel_map() -> Result<ChannelMap, Failure> {
             channels.append(&mut res.channels);
 
             cursor = res.response_metadata.next_cursor;
-            if cursor != None {
+            if cursor.is_some() {
                 continue;
             }
 

@@ -1,3 +1,3 @@
 use dotenvy_macro::dotenv;
 
-pub const TOKEN: &'static str = dotenv!("SLACK_TOKEN");
+pub const TOKEN: &str = dotenv!("SLACK_TOKEN");

@@ -30,7 +30,7 @@ struct MessageResponse {
 pub async fn post_message(msg: &Message) -> Result<(), Failure> {
     let channel_id = get_channel_id(&msg.channel).await?;
 
-    let res = try_post_message(&channel_id, &msg).await;
+    let res = try_post_message(&channel_id, msg).await;
 
     match res {
         Ok(_) => Ok(()),
@@ -39,7 +39,7 @@ pub async fn post_message(msg: &Message) -> Result<(), Failure> {
             // channel, try joining the channel and posting the message again.
             if is_not_in_channel(&e) {
                 join_channel(&channel_id).await?;
-                try_post_message(&channel_id, &msg).await
+                try_post_message(&channel_id, msg).await
             } else {
                 Err(e)
             }
@@ -52,7 +52,7 @@ async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), F
     let res: MessageResponse = post("/chat.postMessage")
         .json(&MessageRequest {
             channel: channel_id,
-            blocks: build_blocks(&msg),
+            blocks: build_blocks(msg),
         })
         .send()
         .await?
@@ -95,8 +95,8 @@ fn fmt_ccs(ccs: &Vec<Mention>) -> String {
     let mut out = String::from("cc");
 
     for cc in ccs {
-        out.push_str(" ");
-        out.push_str(&fmt_mention(&cc));
+        out.push(' ');
+        out.push_str(&fmt_mention(cc));
     }
 
     out
@@ -112,8 +112,8 @@ fn fmt_links(links: &Vec<Url>) -> String {
     for link in links {
         // At time of writing this doesn't cause any extra whitespace at the top
         // of the links in a context block.
-        out.push_str("\n");
-        out.push_str(&fmt_link(&link));
+        out.push('\n');
+        out.push_str(&fmt_link(link));
     }
 
     out

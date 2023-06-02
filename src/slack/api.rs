@@ -2,7 +2,7 @@ use super::auth::TOKEN;
 use crate::error::Failure;
 use reqwest;
 
-const API_BASE: &'static str = "https://slack.com/api";
+const API_BASE: &str = "https://slack.com/api";
 
 /// Create a GET request to the specified `path` endpoint, handling
 /// authentication.
