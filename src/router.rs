@@ -4,7 +4,7 @@ use crate::{
 };
 use axum::{extract, http::StatusCode, routing::post, Router};
 use tower_http::trace::{self, TraceLayer};
-use tracing::Level;
+use tracing::{error, Level};
 
 pub fn new() -> Router {
     let trace_layer = TraceLayer::new_for_http()
@@ -35,7 +35,10 @@ async fn slack_handler(extract::Form(m): extract::Form<Message>) -> (StatusCode,
                 Failure::SlackUnknownChannel(_) => StatusCode::BAD_REQUEST,
             };
 
-            (code, e.to_string())
+            let es = e.to_string();
+
+            error!(es);
+            (code, es)
         }
     }
 }
