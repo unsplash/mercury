@@ -13,7 +13,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v21
       # Docker is preinstalled.
-      - run: nix build .#dockerImage && ./result | docker load
+      - run: |
+          nix build .#dockerImage
+          docker load < result
       - run: |
           echo ${{ secrets.HEROKU_API_KEY }} | docker login -u=_ --password-stdin registry.heroku.com
           docker tag mercury registry.heroku.com/unsplash-mercury/web

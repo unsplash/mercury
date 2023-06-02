@@ -22,7 +22,7 @@
           ];
         };
 
-        img = pkgs.dockerTools.streamLayeredImage {
+        img = pkgs.dockerTools.buildLayeredImage {
           name = "mercury";
           tag = "latest";
           contents = [ app pkgs.cacert ];
