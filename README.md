@@ -16,6 +16,15 @@ curl <host>/api/v1/slack -X POST \
   -d link="https://github.com/unsplash/mercury"
 ```
 
+## Hosting
+
+Mercury is hosted on [Fly](https://fly.io) \*. The app can principally be deployed anywhere that accepts Docker images, provided the following environment variables:
+
+- `SLACK_TOKEN`
+- `PORT` - defaults to 80
+
+<sup>\* It's currently hosted on @samhh's personal Fly account, accessible at [mercury-test.fly.dev](https://mercury-test.fly.dev). This is temporary.</sup>
+
 ### Security
 
 Like Otto before it, Mercury is currently unauthenticated. Whilst this is the case, our Slack instance's peace is protected essentially only by obscurity. It is therefore recommended to avoid using Mercury in public repos.
