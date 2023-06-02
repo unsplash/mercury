@@ -12,17 +12,19 @@ static CLIENT: Lazy<reqwest::Client> = Lazy::new(reqwest::Client::new);
 /// Create a GET request to the specified `path` endpoint, handling
 /// authentication.
 pub fn get<T: ToString>(path: T) -> reqwest::RequestBuilder {
-    CLIENT
-        .get(API_BASE.to_owned() + &path.to_string())
-        .header(reqwest::header::AUTHORIZATION, "Bearer ".to_owned() + TOKEN)
+    CLIENT.get(API_BASE.to_owned() + &path.to_string()).header(
+        reqwest::header::AUTHORIZATION,
+        format!("Bearer {}", TOKEN.get().unwrap()),
+    )
 }
 
 /// Create a POST request to the specified `path` endpoint, handling
 /// authentication.
 pub fn post<T: ToString>(path: T) -> reqwest::RequestBuilder {
-    CLIENT
-        .post(API_BASE.to_owned() + &path.to_string())
-        .header(reqwest::header::AUTHORIZATION, "Bearer ".to_owned() + TOKEN)
+    CLIENT.post(API_BASE.to_owned() + &path.to_string()).header(
+        reqwest::header::AUTHORIZATION,
+        format!("Bearer {}", TOKEN.get().unwrap()),
+    )
 }
 
 /// All the Slack API calls we use include an optional `error` key.

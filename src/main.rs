@@ -14,6 +14,9 @@ async fn main() {
         .parse()
         .expect("Could not parse PORT to u16");
 
+    let token = std::env::var("SLACK_TOKEN").expect("SLACK_TOKEN environment variable not found");
+    slack::auth::TOKEN.set(token).unwrap();
+
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
     // We currently only have tracing (to stdout) for server responses and

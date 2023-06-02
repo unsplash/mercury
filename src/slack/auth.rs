@@ -1,3 +1,3 @@
-use dotenvy_macro::dotenv;
+use once_cell::sync::OnceCell;
 
-pub const TOKEN: &str = dotenv!("SLACK_TOKEN");
+pub static TOKEN: OnceCell<String> = OnceCell::new();
