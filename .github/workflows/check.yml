@@ -1,3 +1,7 @@
+# The default GitHub runner image comes with a bunch of software preinstalled.
+# Typically this doesn't matter, however with Cargo it appears to interfere,
+# hence the `rm -rf ~/.cargo/` steps.
+
 name: Check
 
 on:
@@ -20,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v21
       - run: nix develop -c cargo check
 
@@ -28,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v21
       - run: nix develop -c cargo test
 
@@ -36,6 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v21
       # See: https://github.com/rust-lang/rust-clippy/issues/1209
       - run: RUSTFLAGS="-D warnings" nix develop -c cargo clippy --all-targets
@@ -45,5 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v21
       - run: nix develop -c cargo fmt --check
