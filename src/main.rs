@@ -1,6 +1,6 @@
 use dotenvy::dotenv;
 use std::net::SocketAddr;
-use tracing::warn;
+use tracing::{info, warn};
 
 pub mod error;
 mod router;
@@ -30,6 +30,7 @@ async fn main() {
     slack::auth::TOKEN.set(token).unwrap();
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    info!("Listening on {}", addr.to_string());
 
     axum::Server::bind(&addr)
         .serve(router::new().into_make_service())
