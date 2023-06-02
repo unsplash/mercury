@@ -622,6 +622,7 @@ version = "0.0.0"
 dependencies = [
  "cached",
  "dotenvy_macro",
+ "once_cell",
  "reqwest",
  "serde",
  "serde_json",
