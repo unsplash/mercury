@@ -15,10 +15,7 @@ jobs:
       # Docker is preinstalled.
       - run: nix build .#dockerImage && ./result | docker load
       - run: |
-          echo ${{ secrets.HEROKU_API_KEY }} | docker login -u=_ --password-stdin registry.heroku.com
-          docker tag mercury registry.heroku.com/unsplash-mercury/web
-          docker push registry.heroku.com/unsplash-mercury/web
-      # The Heroku CLI implicitly uses `HEROKU_API_KEY`.
-      - run: nix develop .#ops -c heroku container:release -a unsplash-mercury web
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          echo ${{ secrets.FLY_AUTH_TOKEN }} | docker login -u x --password-stdin registry.fly.io/mercury-test
+          docker tag mercury registry.fly.io/mercury-test:latest
+          docker push registry.fly.io/mercury-test:latest
+      - run: nix develop .#ops -c flyctl deploy -t ${{ secrets.FLY_AUTH_TOKEN }}

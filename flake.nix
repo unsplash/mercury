@@ -44,7 +44,7 @@
             inputsFrom = [ app ];
 
             nativeBuildInputs = with pkgs; [
-              heroku
+              flyctl
             ];
           };
         };
