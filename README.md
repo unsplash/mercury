@@ -36,7 +36,7 @@ The Nix shell provides the necessary tooling to build with [Cargo](https://doc.r
 It's also possible to build directly with Nix. This can be leveraged to build a hermetic Docker image. Example:
 
 ```console
-$ nix build .#dockerImage && ./result | podman load
+$ nix build ".#dockerImage" && ./result | podman load
 $ podman run --rm -p 80 -e SLACK_TOKEN mercury
 ```
 
