@@ -1,4 +1,4 @@
-use super::{api::*, block::*, channel::*};
+use super::{api::*, block::*, channel::*, mention::*};
 use crate::error::Failure;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -9,6 +9,7 @@ pub struct Message {
     pub title: String,
     pub desc: String,
     pub links: Vec<Url>,
+    pub ccs: Vec<Mention>,
 }
 
 /// <https://api.slack.com/methods/chat.postMessage#args>
@@ -73,9 +74,13 @@ fn is_not_in_channel(res: &Failure) -> bool {
 }
 
 fn build_blocks(msg: &Message) -> Vec<Block> {
-    let mut xs = Vec::with_capacity(2);
+    let mut xs = Vec::with_capacity(3);
 
     xs.push(Block::Plaintext(format!("{}: {}", msg.title, msg.desc)));
+
+    if !msg.ccs.is_empty() {
+        xs.push(Block::Mrkdown(fmt_ccs(&msg.ccs)));
+    }
 
     if !msg.links.is_empty() {
         // We shouldn't be able to both parse and print something as a `Url` and
@@ -84,6 +89,21 @@ fn build_blocks(msg: &Message) -> Vec<Block> {
     }
 
     xs
+}
+
+fn fmt_ccs(ccs: &Vec<Mention>) -> String {
+    let mut out = String::from("cc");
+
+    for cc in ccs {
+        out.push_str(" ");
+        out.push_str(&fmt_mention(&cc));
+    }
+
+    out
+}
+
+fn fmt_mention(m: &Mention) -> String {
+    format!("<!subteam^{}>", to_user_group_id(m))
 }
 
 fn fmt_links(links: &Vec<Url>) -> String {

@@ -14,7 +14,11 @@ use serde::{ser, Serialize};
 ///
 /// <https://api.slack.com/reference/block-kit/blocks>
 pub enum Block {
+    // Plaintext, safe for foreign input.
     Plaintext(String),
+    // Slack's take on markdown, unsafe for foreign input.
+    Mrkdown(String),
+    // Small copy, accepting either plaintext or mrkdwn content.
     Context(String),
 }
 
@@ -40,6 +44,16 @@ impl ser::Serialize for Block {
 
                 let inner = TextObj {
                     typ: "plain_text",
+                    text: x,
+                };
+                state.serialize_field("text", &inner)?;
+            }
+
+            Block::Mrkdown(x) => {
+                state.serialize_field("type", "section")?;
+
+                let inner = TextObj {
+                    typ: "mrkdwn",
                     text: x,
                 };
                 state.serialize_field("text", &inner)?;

@@ -18,6 +18,7 @@ async fn main() {
             )
             .unwrap(),
         ],
+        ccs: vec![],
     };
 
     let res = post_message(&msg).await;
