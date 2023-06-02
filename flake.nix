@@ -22,10 +22,10 @@
           ];
         };
 
-        img = pkgs.dockerTools.buildImage {
+        img = pkgs.dockerTools.streamLayeredImage {
           name = "mercury";
           tag = "latest";
-          copyToRoot = [ app pkgs.cacert ];
+          contents = [ app pkgs.cacert ];
           config.Cmd = [ "${app}/bin/mercury" ];
         };
       in
