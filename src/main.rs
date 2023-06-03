@@ -1,3 +1,9 @@
+//! The guide of souls to the underworld.
+//!
+//! For a high-level introduction see the project README.
+//!
+//! The only communication mechanism currently supported is [Slack][slack].
+
 use dotenvy::dotenv;
 use std::net::SocketAddr;
 use tracing::{info, warn};
