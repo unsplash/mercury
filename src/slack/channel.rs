@@ -1,10 +1,8 @@
+use super::{api::*, error::Failure};
 use cached::proc_macro::cached;
+use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
 use std::{collections::HashMap, fmt};
-
-use super::api::*;
-use crate::error::Failure;
-use serde::{Deserialize, Serialize};
 
 /// Channel names as are visible in the Slack UI, absent the leading hash.
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

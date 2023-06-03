@@ -2,7 +2,6 @@ use dotenvy::dotenv;
 use std::net::SocketAddr;
 use tracing::{info, warn};
 
-pub mod error;
 mod router;
 pub mod slack;
 

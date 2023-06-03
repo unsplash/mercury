@@ -1,5 +1,4 @@
-use super::{api::*, block::*, channel::*, mention::*};
-use crate::error::Failure;
+use super::{api::*, block::*, channel::*, error::Failure, mention::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 

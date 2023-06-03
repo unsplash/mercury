@@ -1,6 +1,6 @@
-use crate::{
+use crate::slack::{
     error::Failure,
-    slack::message::{post_message, Message},
+    message::{post_message, Message},
 };
 use axum::{extract, http::StatusCode, routing::post, Router};
 use tower_http::trace::{self, TraceLayer};

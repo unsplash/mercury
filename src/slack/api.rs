@@ -1,5 +1,4 @@
-use super::auth::TOKEN;
-use crate::error::Failure;
+use super::{auth::TOKEN, error::Failure};
 use once_cell::sync::Lazy;
 
 const API_BASE: &str = "https://slack.com/api";
