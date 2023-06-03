@@ -10,7 +10,7 @@ Run the following in a CI pipeline shell or script:
 
 ```sh
 curl <HOST>/api/v1/slack -X POST \
-    --oauth2-bearer <SLACK_TOKEN>
+    --oauth2-bearer <SLACK_TOKEN> \
     -d channel=playground \
     -d title=Mercury \
     -d desc="Running the example"
