@@ -10,10 +10,10 @@ Run the following in a CI pipeline shell or script:
 
 ```sh
 curl <host>/api/v1/slack -X POST \
-  -d channel=playground \
-  -d title=Mercury \
-  -d desc="Running the example"
-  -d link="https://github.com/unsplash/mercury"
+    -d channel=playground \
+    -d title=Mercury \
+    -d desc="Running the example"
+    -d link="https://github.com/unsplash/mercury"
 ```
 
 ## Hosting

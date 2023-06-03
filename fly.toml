@@ -2,11 +2,11 @@ app = "mercury-test"
 primary_region = "lhr"
 
 [http_service]
-  internal_port = 80
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 1
+internal_port = 80
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 1
 
 [build]
-  image = "registry.fly.io/mercury-test:latest"
+image = "registry.fly.io/mercury-test:latest"
