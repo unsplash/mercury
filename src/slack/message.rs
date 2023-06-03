@@ -1,4 +1,4 @@
-use super::{api::*, block::*, channel::*, error::SlackError, mention::*};
+use super::{api::*, auth::SlackAccessToken, block::*, channel::*, error::SlackError, mention::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -31,10 +31,10 @@ struct MessageResponse {
 }
 
 /// Try to post a message in a channel, joining it if necessary.
-pub async fn post_message(msg: &Message) -> Result<(), SlackError> {
-    let channel_id = get_channel_id(&msg.channel).await?;
+pub async fn post_message(msg: &Message, token: &SlackAccessToken) -> Result<(), SlackError> {
+    let channel_id = get_channel_id(&msg.channel, token).await?;
 
-    let res = try_post_message(&channel_id, msg).await;
+    let res = try_post_message(&channel_id, msg, token).await;
 
     match res {
         Ok(_) => Ok(()),
@@ -42,8 +42,8 @@ pub async fn post_message(msg: &Message) -> Result<(), SlackError> {
             // If we've failed to post the message because we're not in the
             // channel, try joining the channel and posting the message again.
             if is_not_in_channel(&e) {
-                join_channel(&channel_id).await?;
-                try_post_message(&channel_id, msg).await
+                join_channel(&channel_id, token).await?;
+                try_post_message(&channel_id, msg, token).await
             } else {
                 Err(e)
             }
@@ -52,8 +52,12 @@ pub async fn post_message(msg: &Message) -> Result<(), SlackError> {
 }
 
 /// Try to post a message assuming we've already joined the channel.
-async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), SlackError> {
-    let res: MessageResponse = post("/chat.postMessage")
+async fn try_post_message(
+    channel_id: &ChannelId,
+    msg: &Message,
+    token: &SlackAccessToken,
+) -> Result<(), SlackError> {
+    let res: MessageResponse = post("/chat.postMessage", token)
         .json(&MessageRequest {
             channel: channel_id,
             blocks: build_blocks(msg),

@@ -24,9 +24,6 @@ async fn main() {
         .map(|x| x.parse().expect("Could not parse PORT to u16"))
         .unwrap_or(80);
 
-    let token = std::env::var("SLACK_TOKEN").expect("SLACK_TOKEN environment variable not found");
-    slack::auth::TOKEN.set(token).unwrap();
-
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     info!("Listening on {}", addr.to_string());
 

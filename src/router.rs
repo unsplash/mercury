@@ -1,8 +1,9 @@
 use crate::slack::{
+    auth::SlackAccessToken,
     error::SlackError,
     message::{post_message, Message},
 };
-use axum::{extract, http::StatusCode, routing::post, Router};
+use axum::{extract, headers, http::StatusCode, routing::post, Router, TypedHeader};
 use tower_http::trace::{self, TraceLayer};
 use tracing::{error, Level};
 
@@ -22,8 +23,11 @@ pub fn new() -> Router {
 // Currently this only supports form bodies. For JSON as well there'll be some
 // boilerplate, see:
 //   https://github.com/tokio-rs/axum/issues/1654
-async fn slack_handler(extract::Form(m): extract::Form<Message>) -> (StatusCode, String) {
-    let res = post_message(&m).await;
+async fn slack_handler(
+    TypedHeader(t): TypedHeader<headers::Authorization<headers::authorization::Bearer>>,
+    extract::Form(m): extract::Form<Message>,
+) -> (StatusCode, String) {
+    let res = post_message(&m, &SlackAccessToken(t.token().into())).await;
 
     match res {
         Ok(_) => (StatusCode::OK, String::new()),

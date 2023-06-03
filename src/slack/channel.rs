@@ -1,4 +1,4 @@
-use super::{api::*, error::SlackError};
+use super::{api::*, auth::SlackAccessToken, error::SlackError};
 use cached::proc_macro::cached;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
@@ -46,8 +46,8 @@ struct JoinResponse {
 }
 
 /// We just join channels before we can message in them.
-pub async fn join_channel(channel: &ChannelId) -> Result<(), SlackError> {
-    let res: JoinResponse = post("/conversations.join")
+pub async fn join_channel(channel: &ChannelId, token: &SlackAccessToken) -> Result<(), SlackError> {
+    let res: JoinResponse = post("/conversations.join", token)
         .json(&JoinRequest { channel })
         .send()
         .await?
@@ -61,8 +61,11 @@ pub async fn join_channel(channel: &ChannelId) -> Result<(), SlackError> {
     }
 }
 
-pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, SlackError> {
-    let map = get_channel_map().await?;
+pub async fn get_channel_id(
+    channel_name: &ChannelName,
+    token: &SlackAccessToken,
+) -> Result<ChannelId, SlackError> {
+    let map = get_channel_map(token.clone()).await?;
 
     // Channel names can't contain hashes, so by doing this we can support
     // consumers supplying (or not) a leading hash.
@@ -103,12 +106,12 @@ struct PaginationMeta {
 /// this function is cached, meaning that there's a risk of the map becoming
 /// stale should channels be renamed.
 #[cached(result = true, sync_writes = true)]
-async fn get_channel_map() -> Result<ChannelMap, SlackError> {
+async fn get_channel_map(token: SlackAccessToken) -> Result<ChannelMap, SlackError> {
     let mut channels: Vec<ChannelMeta> = Vec::new();
     let mut cursor: Option<String> = None;
 
     loop {
-        let mut res: ListResponse = get("/conversations.list")
+        let mut res: ListResponse = get("/conversations.list", &token)
             .query(&ListRequest {
                 limit: 200,
                 exclude_archived: true,

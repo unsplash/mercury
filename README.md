@@ -9,7 +9,8 @@ Mercury is designed for easy plug and play in CI, which typically "knows" when s
 Run the following in a CI pipeline shell or script:
 
 ```sh
-curl <host>/api/v1/slack -X POST \
+curl <HOST>/api/v1/slack -X POST \
+    --oauth2-bearer <SLACK_TOKEN>
     -d channel=playground \
     -d title=Mercury \
     -d desc="Running the example"
@@ -18,10 +19,7 @@ curl <host>/api/v1/slack -X POST \
 
 ## Hosting
 
-Mercury is hosted on [Fly](https://fly.io) \*. The app can principally be deployed anywhere that accepts Docker images, provided the following environment variables:
-
-- `SLACK_TOKEN`
-- `PORT` - defaults to 80
+Mercury is hosted on [Fly](https://fly.io) \*. The app can principally be deployed anywhere that accepts Docker images. The server runs on `$PORT`, defaulting to port 80.
 
 <sup>\* It's currently hosted on @samhh's personal Fly account, accessible at [mercury-test.fly.dev](https://mercury-test.fly.dev). This is temporary.</sup>
 
