@@ -1,4 +1,4 @@
-use super::{api::*, error::Failure};
+use super::{api::*, error::SlackError};
 use cached::proc_macro::cached;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
@@ -46,7 +46,7 @@ struct JoinResponse {
 }
 
 /// We just join channels before we can message in them.
-pub async fn join_channel(channel: &ChannelId) -> Result<(), Failure> {
+pub async fn join_channel(channel: &ChannelId) -> Result<(), SlackError> {
     let res: JoinResponse = post("/conversations.join")
         .json(&JoinRequest { channel })
         .send()
@@ -61,7 +61,7 @@ pub async fn join_channel(channel: &ChannelId) -> Result<(), Failure> {
     }
 }
 
-pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, Failure> {
+pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, SlackError> {
     let map = get_channel_map().await?;
 
     // Channel names can't contain hashes, so by doing this we can support
@@ -69,7 +69,7 @@ pub async fn get_channel_id(channel_name: &ChannelName) -> Result<ChannelId, Fai
     let normalised_channel_name = ChannelName(channel_name.0.trim_start_matches('#').into());
 
     map.get(&normalised_channel_name)
-        .ok_or(Failure::SlackUnknownChannel(channel_name.clone()))
+        .ok_or(SlackError::UnknownChannel(channel_name.clone()))
         .cloned()
 }
 
@@ -103,7 +103,7 @@ struct PaginationMeta {
 /// this function is cached, meaning that there's a risk of the map becoming
 /// stale should channels be renamed.
 #[cached(result = true, sync_writes = true)]
-async fn get_channel_map() -> Result<ChannelMap, Failure> {
+async fn get_channel_map() -> Result<ChannelMap, SlackError> {
     let mut channels: Vec<ChannelMeta> = Vec::new();
     let mut cursor: Option<String> = None;
 

@@ -1,4 +1,4 @@
-use super::{api::*, block::*, channel::*, error::Failure, mention::*};
+use super::{api::*, block::*, channel::*, error::SlackError, mention::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -31,7 +31,7 @@ struct MessageResponse {
 }
 
 /// Try to post a message in a channel, joining it if necessary.
-pub async fn post_message(msg: &Message) -> Result<(), Failure> {
+pub async fn post_message(msg: &Message) -> Result<(), SlackError> {
     let channel_id = get_channel_id(&msg.channel).await?;
 
     let res = try_post_message(&channel_id, msg).await;
@@ -52,7 +52,7 @@ pub async fn post_message(msg: &Message) -> Result<(), Failure> {
 }
 
 /// Try to post a message assuming we've already joined the channel.
-async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), Failure> {
+async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), SlackError> {
     let res: MessageResponse = post("/chat.postMessage")
         .json(&MessageRequest {
             channel: channel_id,
@@ -70,9 +70,9 @@ async fn try_post_message(channel_id: &ChannelId, msg: &Message) -> Result<(), F
     }
 }
 
-fn is_not_in_channel(res: &Failure) -> bool {
+fn is_not_in_channel(res: &SlackError) -> bool {
     match res {
-        Failure::SlackAPIResponseError(e) => e == "not_in_channel",
+        SlackError::APIResponseError(e) => e == "not_in_channel",
         _ => false,
     }
 }

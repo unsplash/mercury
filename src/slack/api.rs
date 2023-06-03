@@ -1,4 +1,4 @@
-use super::{auth::TOKEN, error::Failure};
+use super::{auth::TOKEN, error::SlackError};
 use once_cell::sync::Lazy;
 
 const API_BASE: &str = "https://slack.com/api";
@@ -27,9 +27,9 @@ pub fn post<T: ToString>(path: T) -> reqwest::RequestBuilder {
 }
 
 /// All the Slack API calls we use include an optional `error` key.
-pub fn decode_error(me: Option<String>) -> Failure {
+pub fn decode_error(me: Option<String>) -> SlackError {
     match me {
-        None => Failure::SlackAPIResponseMissingError,
-        Some(e) => Failure::SlackAPIResponseError(e),
+        None => SlackError::APIResponseMissingError,
+        Some(e) => SlackError::APIResponseError(e),
     }
 }

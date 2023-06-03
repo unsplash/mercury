@@ -1,5 +1,5 @@
 use crate::slack::{
-    error::Failure,
+    error::SlackError,
     message::{post_message, Message},
 };
 use axum::{extract, http::StatusCode, routing::post, Router};
@@ -29,10 +29,10 @@ async fn slack_handler(extract::Form(m): extract::Form<Message>) -> (StatusCode,
         Ok(_) => (StatusCode::OK, String::new()),
         Err(e) => {
             let code = match &e {
-                Failure::SlackAPIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                Failure::SlackAPIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                Failure::SlackAPIResponseMissingError => StatusCode::BAD_GATEWAY,
-                Failure::SlackUnknownChannel(_) => StatusCode::BAD_REQUEST,
+                SlackError::APIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                SlackError::APIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                SlackError::APIResponseMissingError => StatusCode::BAD_GATEWAY,
+                SlackError::UnknownChannel(_) => StatusCode::BAD_REQUEST,
             };
 
             let es = e.to_string();
