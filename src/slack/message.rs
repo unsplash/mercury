@@ -1,12 +1,17 @@
+//! Send structured messages to any given Slack channel.
+
 use super::{api::*, auth::SlackAccessToken, block::*, channel::*, error::SlackError, mention::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-/// An opinionated, structured message.
+/// A structured message which does not permit custom formatting.
 ///
-/// It would be nontrivially difficult to support multiple inputs (vectors) with
-/// `application/x-www-form-urlencoded` bodies:
-///   <https://github.com/nox/serde_urlencoded/issues/52>
+/// The definition is intentionally a little generalised to reduce coupling to
+/// Slack and avoid any issues with escaping with the fewest compromises.
+///
+// It would be nontrivially difficult to support multiple inputs (vectors) with
+// `application/x-www-form-urlencoded` bodies:
+//   <https://github.com/nox/serde_urlencoded/issues/52>
 #[derive(Deserialize)]
 pub struct Message {
     pub channel: ChannelName,
@@ -31,7 +36,7 @@ struct MessageResponse {
     ok: bool,
 }
 
-/// Try to post a message in a channel, joining it if necessary.
+/// Post a message in a channel, joining it if necessary.
 pub async fn post_message(msg: &Message, token: &SlackAccessToken) -> Result<(), SlackError> {
     let channel_id = get_channel_id(&msg.channel, token).await?;
 
@@ -74,6 +79,8 @@ async fn try_post_message(
     }
 }
 
+/// Parse Slack's API response error to determine if the issue is that we need
+/// to join the channel.
 fn is_not_in_channel(res: &SlackError) -> bool {
     match res {
         SlackError::APIResponseError(e) => e == "not_in_channel",
@@ -81,6 +88,8 @@ fn is_not_in_channel(res: &SlackError) -> bool {
     }
 }
 
+/// Put together the blocks, mapping [Message] to its format on Slack's end,
+/// including formatting.
 fn build_blocks(msg: &Message) -> Vec<Block> {
     let mut xs = Vec::with_capacity(3);
 
@@ -99,10 +108,20 @@ fn build_blocks(msg: &Message) -> Vec<Block> {
     xs
 }
 
+/// Format a [Mention] to the syntax Slack expects, and stylise it.
 fn fmt_mention(m: &Mention) -> String {
     format!("cc <!subteam^{}>", to_user_group_id(m))
 }
 
+/// Prettify a URL, reducing verbosity.
+///
+/// ```
+/// let url = "https://unsplash.com/it?set_locale=it-IT";
+/// assert_eq!(
+///     fmt_link(&Url::parse(url).unwrap()),
+///     format!("<{}|unsplash.com/it>", url)
+/// );
+/// ```
 fn fmt_link(u: &Url) -> String {
     let href = u.to_string();
 

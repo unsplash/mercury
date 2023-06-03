@@ -1,5 +1,17 @@
+//! Custom Serde deserialisers.
+
 use serde::de::{Deserialize, Deserializer, Error};
 
+/// Deserialise a `bool`, accepting only `true` and rejecting `false`. The dual
+/// to [only_false].
+///
+/// ```
+/// struct T {
+///     #[serde(deserialize_with = "only_true")]
+///     val: bool,
+/// }
+///
+/// ```
 pub fn only_true<'a, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'a>,
@@ -29,6 +41,16 @@ fn test_only_true() {
     assert!(serde_json::from_str::<T>(r#"{"val": false}"#).is_err());
 }
 
+/// Deserialise a `bool`, accepting only `false` and rejecting `true`. The dual
+/// to [only_true].
+///
+/// ```
+/// struct T {
+///     #[serde(deserialize_with = "only_false")]
+///     val: bool,
+/// }
+///
+/// ```
 pub fn only_false<'a, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'a>,

@@ -1,15 +1,28 @@
+//! Interact with Slack channels, including the ability to programmatically
+//! join them.
+
 use super::{api::*, auth::SlackAccessToken, error::SlackError};
 use cached::proc_macro::cached;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
 use std::{collections::HashMap, fmt};
 
-/// Channel names as are visible in the Slack UI, absent the leading hash.
+/// Channel names as are visible in the Slack UI, with or without the leading
+/// hash.
+///
+/// ```
+/// let with =    ChannelName("#playground".into());
+/// let without = ChannelName("playground".into());
+/// ```
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ChannelName(pub String);
 
-/// Format without the surrounding newtype wrapper i.e. `foo` instead of
-/// `ChannelName("foo")`.
+/// Format without the surrounding newtype wrapper.
+///
+/// ```
+/// let x = ChannelName("fp".into());
+/// assert_eq!(format!("{}", x), "fp");
+/// ```
 impl fmt::Display for ChannelName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -22,10 +35,12 @@ impl fmt::Display for ChannelName {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ChannelId(pub String);
 
-/// Slack's API expects channel IDs, however we want consumers to be able to
-/// supply channel names without worrying about that detail.
+/// Maps Slack channel names to channel IDs; Slack's API expects channel IDs,
+/// however we want consumers to be able to supply channel names without
+/// worrying about that detail.
 type ChannelMap = HashMap<ChannelName, ChannelId>;
 
+/// The metadata we care about per-channel within [ListResponse].
 #[derive(Deserialize)]
 struct ChannelMeta {
     id: ChannelId,
@@ -61,6 +76,8 @@ pub async fn join_channel(channel: &ChannelId, token: &SlackAccessToken) -> Resu
     }
 }
 
+/// Get the channel ID assocatiated with a channel name, enabling onward calls
+/// to Slack's API.
 pub async fn get_channel_id(
     channel_name: &ChannelName,
     token: &SlackAccessToken,
@@ -96,6 +113,7 @@ struct ListResponse {
     response_metadata: PaginationMeta,
 }
 
+/// The metadata attached to a [ListResponse], enabling pagination.
 #[serde_as]
 #[derive(Deserialize)]
 struct PaginationMeta {

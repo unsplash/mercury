@@ -6,6 +6,8 @@ pub mod de;
 mod router;
 pub mod slack;
 
+/// Application entrypoint. Initialises tracing, checks for environment
+/// variables, binds to 0.0.0.0, and starts the server.
 #[tokio::main]
 async fn main() {
     // We currently only have tracing (to stdout) for server responses and

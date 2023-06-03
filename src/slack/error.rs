@@ -1,10 +1,16 @@
+//! Captures what failure can look like when making requests to the Slack API.
+
 use crate::slack::channel::ChannelName;
 use std::fmt;
 
-/// Sum type representing every possible unexceptional fail state.
+/// Every possible unexceptional fail case when making requests to the Slack API.
 pub enum SlackError {
+    /// General request failure.
     APIRequestFailed(reqwest::Error),
+    /// Successfully decoded response error message.
     APIResponseError(String),
+    /// Unable to find the requested channel in our channel <-> id map. It's
+    /// possible that the cache is stale.
     UnknownChannel(ChannelName),
 }
 

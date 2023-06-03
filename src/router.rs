@@ -1,3 +1,9 @@
+//! Server router definition.
+//!
+//! The following routes are supported:
+//!
+//! POST: `/api/v1/slack`
+
 use crate::slack::{
     auth::SlackAccessToken,
     error::SlackError,
@@ -7,6 +13,7 @@ use axum::{extract, headers, http::StatusCode, routing::post, Router, TypedHeade
 use tower_http::trace::{self, TraceLayer};
 use tracing::{error, Level};
 
+/// Instantiate a new router with tracing.
 pub fn new() -> Router {
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
@@ -20,6 +27,12 @@ pub fn new() -> Router {
     Router::new().nest("/api", api).layer(trace_layer)
 }
 
+/// Handler for the POST route `/api/v1/slack`.
+///
+/// A `Bearer` `Authorization` header containing a Slack access token must be
+/// present.
+///
+/// Accepts a [Message] in `x-www-form-urlencoded` format.
 // Currently this only supports form bodies. For JSON as well there'll be some
 // boilerplate, see:
 //   https://github.com/tokio-rs/axum/issues/1654
