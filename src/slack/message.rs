@@ -137,30 +137,37 @@ fn fmt_link(u: &Url) -> String {
     }
 }
 
-#[test]
-fn test_fmt_link() {
-    let pretty_raw = "https://images.unsplash.com/path/to/photo.jpg?size=large";
-    let pretty = Url::parse(pretty_raw).unwrap();
-    assert_eq!(
-        fmt_link(&pretty),
-        format!("<{}|images.unsplash.com/path/to/photo.jpg>", pretty_raw)
-    );
+#[cfg(test)]
+mod tests {
+    use super::Url;
 
-    let pretty_www_raw = "https://www.unsplash.com/path/to/photo.jpg?size=large";
-    let pretty_www = Url::parse(pretty_www_raw).unwrap();
-    assert_eq!(
-        fmt_link(&pretty_www),
-        format!("<{}|unsplash.com/path/to/photo.jpg>", pretty_www_raw)
-    );
+    #[test]
+    fn test_fmt_link() {
+        use super::fmt_link;
 
-    let pretty_no_path_raw = "https://unsplash.com/";
-    let pretty_no_path = Url::parse(pretty_no_path_raw).unwrap();
-    assert_eq!(
-        fmt_link(&pretty_no_path),
-        format!("<{}|unsplash.com>", pretty_no_path_raw)
-    );
+        let pretty_raw = "https://images.unsplash.com/path/to/photo.jpg?size=large";
+        let pretty = Url::parse(pretty_raw).unwrap();
+        assert_eq!(
+            fmt_link(&pretty),
+            format!("<{}|images.unsplash.com/path/to/photo.jpg>", pretty_raw)
+        );
 
-    let ugly_raw = "data:text/plain,Hello?World#";
-    let ugly = Url::parse(ugly_raw).unwrap();
-    assert_eq!(fmt_link(&ugly), ugly_raw);
+        let pretty_www_raw = "https://www.unsplash.com/path/to/photo.jpg?size=large";
+        let pretty_www = Url::parse(pretty_www_raw).unwrap();
+        assert_eq!(
+            fmt_link(&pretty_www),
+            format!("<{}|unsplash.com/path/to/photo.jpg>", pretty_www_raw)
+        );
+
+        let pretty_no_path_raw = "https://unsplash.com/";
+        let pretty_no_path = Url::parse(pretty_no_path_raw).unwrap();
+        assert_eq!(
+            fmt_link(&pretty_no_path),
+            format!("<{}|unsplash.com>", pretty_no_path_raw)
+        );
+
+        let ugly_raw = "data:text/plain,Hello?World#";
+        let ugly = Url::parse(ugly_raw).unwrap();
+        assert_eq!(fmt_link(&ugly), ugly_raw);
+    }
 }

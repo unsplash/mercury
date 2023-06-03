@@ -25,22 +25,6 @@ where
     })
 }
 
-#[test]
-fn test_only_true() {
-    #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
-    struct T {
-        #[serde(deserialize_with = "only_true")]
-        val: bool,
-    }
-
-    assert_eq!(
-        serde_json::from_str::<T>(r#"{"val": true}"#).unwrap(),
-        T { val: true },
-    );
-
-    assert!(serde_json::from_str::<T>(r#"{"val": false}"#).is_err());
-}
-
 /// Deserialise a `bool`, accepting only `false` and rejecting `true`. The dual
 /// to [only_true].
 ///
@@ -64,18 +48,39 @@ where
     })
 }
 
-#[test]
-fn test_only_false() {
-    #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
-    struct T {
-        #[serde(deserialize_with = "only_false")]
-        val: bool,
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_only_true() {
+        #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+        struct T {
+            #[serde(deserialize_with = "only_true")]
+            val: bool,
+        }
+
+        assert_eq!(
+            serde_json::from_str::<T>(r#"{"val": true}"#).unwrap(),
+            T { val: true },
+        );
+
+        assert!(serde_json::from_str::<T>(r#"{"val": false}"#).is_err());
     }
 
-    assert_eq!(
-        serde_json::from_str::<T>(r#"{"val": false}"#).unwrap(),
-        T { val: false },
-    );
+    #[test]
+    fn test_only_false() {
+        #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
+        struct T {
+            #[serde(deserialize_with = "only_false")]
+            val: bool,
+        }
 
-    assert!(serde_json::from_str::<T>(r#"{"val": true}"#).is_err());
+        assert_eq!(
+            serde_json::from_str::<T>(r#"{"val": false}"#).unwrap(),
+            T { val: false },
+        );
+
+        assert!(serde_json::from_str::<T>(r#"{"val": true}"#).is_err());
+    }
 }
