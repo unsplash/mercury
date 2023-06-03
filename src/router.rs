@@ -35,7 +35,6 @@ async fn slack_handler(
             let code = match &e {
                 SlackError::APIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 SlackError::APIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                SlackError::APIResponseMissingError => StatusCode::BAD_GATEWAY,
                 SlackError::UnknownChannel(_) => StatusCode::BAD_REQUEST,
             };
 

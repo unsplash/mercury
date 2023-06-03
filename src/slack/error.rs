@@ -5,7 +5,6 @@ use std::fmt;
 pub enum SlackError {
     APIRequestFailed(reqwest::Error),
     APIResponseError(String),
-    APIResponseMissingError,
     UnknownChannel(ChannelName),
 }
 
@@ -20,7 +19,6 @@ impl fmt::Display for SlackError {
         let x = match self {
             SlackError::APIRequestFailed(e) => format!("Slack API request failed: {:?}", e),
             SlackError::APIResponseError(e) => format!("Slack API returned error: {}", e),
-            SlackError::APIResponseMissingError => "Slack API failed to return error.".into(),
             SlackError::UnknownChannel(c) => format!("Unknown Slack channel: {}", c),
         };
 

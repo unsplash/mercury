@@ -744,6 +744,7 @@ dependencies = [
  "once_cell",
  "reqwest",
  "serde",
+ "serde_json",
  "serde_with",
  "tokio",
  "tower-http",

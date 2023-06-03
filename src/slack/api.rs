@@ -1,5 +1,6 @@
-use super::{auth::*, error::SlackError};
+use super::auth::*;
 use once_cell::sync::Lazy;
+use serde::Deserialize;
 
 const API_BASE: &str = "https://slack.com/api";
 
@@ -24,10 +25,40 @@ pub fn post<T: ToString>(path: T, token: &SlackAccessToken) -> reqwest::RequestB
         .header(reqwest::header::AUTHORIZATION, to_auth_header_val(token))
 }
 
-/// All the Slack API calls we use include an optional `error` key.
-pub fn decode_error(me: Option<String>) -> SlackError {
-    match me {
-        None => SlackError::APIResponseMissingError,
-        Some(e) => SlackError::APIResponseError(e),
-    }
+/// Slack's API returns an untagged response with, on the unhappy path, a common
+/// `error` property. Examples:
+///
+/// ```json
+/// {
+///     "ok": true,
+///     "channels": []
+/// }
+/// ```
+///
+/// ```json
+/// {
+///     "ok": false,
+///     "error": "invalid_auth"
+/// }
+/// ```
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum APIResult<T> {
+    Ok(T),
+    Err(ErrorResponse),
+}
+
+/// The `ok` field is checked here, and should be checked on responses too,
+/// primarily to ensure appropriate deserialization behaviour in case of an
+/// otherwise empty successful response.
+///
+/// Ideally we'd be able to use `ok` as a tag, rather than defining `APIResult`
+/// as untagged. See:
+///   <https://github.com/serde-rs/serde/issues/745#issuecomment-294314786>
+#[derive(Deserialize)]
+pub struct ErrorResponse {
+    #[allow(dead_code)]
+    #[serde(deserialize_with = "crate::de::only_false")]
+    ok: bool,
+    pub error: String,
 }

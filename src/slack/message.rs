@@ -26,8 +26,9 @@ struct MessageRequest<'a> {
 /// <https://api.slack.com/methods/chat.postMessage#examples>
 #[derive(Deserialize)]
 struct MessageResponse {
+    #[allow(dead_code)]
+    #[serde(deserialize_with = "crate::de::only_true")]
     ok: bool,
-    error: Option<String>,
 }
 
 /// Try to post a message in a channel, joining it if necessary.
@@ -57,7 +58,7 @@ async fn try_post_message(
     msg: &Message,
     token: &SlackAccessToken,
 ) -> Result<(), SlackError> {
-    let res: MessageResponse = post("/chat.postMessage", token)
+    let res: APIResult<MessageResponse> = post("/chat.postMessage", token)
         .json(&MessageRequest {
             channel: channel_id,
             blocks: build_blocks(msg),
@@ -67,10 +68,9 @@ async fn try_post_message(
         .json()
         .await?;
 
-    if res.ok {
-        Ok(())
-    } else {
-        Err(decode_error(res.error))
+    match res {
+        APIResult::Ok(_) => Ok(()),
+        APIResult::Err(res) => Err(SlackError::APIResponseError(res.error)),
     }
 }
 

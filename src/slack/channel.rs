@@ -41,23 +41,23 @@ struct JoinRequest<'a> {
 /// <https://api.slack.com/methods/conversations.join#examples>
 #[derive(Deserialize)]
 struct JoinResponse {
+    #[allow(dead_code)]
+    #[serde(deserialize_with = "crate::de::only_true")]
     ok: bool,
-    error: Option<String>,
 }
 
 /// We just join channels before we can message in them.
 pub async fn join_channel(channel: &ChannelId, token: &SlackAccessToken) -> Result<(), SlackError> {
-    let res: JoinResponse = post("/conversations.join", token)
+    let res: APIResult<JoinResponse> = post("/conversations.join", token)
         .json(&JoinRequest { channel })
         .send()
         .await?
         .json()
         .await?;
 
-    if res.ok {
-        Ok(())
-    } else {
-        Err(decode_error(res.error))
+    match res {
+        APIResult::Ok(_) => Ok(()),
+        APIResult::Err(res) => Err(SlackError::APIResponseError(res.error)),
     }
 }
 
@@ -89,8 +89,9 @@ struct ListRequest {
 /// <https://api.slack.com/methods/conversations.list#examples>
 #[derive(Deserialize)]
 struct ListResponse {
+    #[allow(dead_code)]
+    #[serde(deserialize_with = "crate::de::only_true")]
     ok: bool,
-    error: Option<String>,
     channels: Vec<ChannelMeta>,
     response_metadata: PaginationMeta,
 }
@@ -111,7 +112,7 @@ async fn get_channel_map(token: SlackAccessToken) -> Result<ChannelMap, SlackErr
     let mut cursor: Option<String> = None;
 
     loop {
-        let mut res: ListResponse = get("/conversations.list", &token)
+        let res: APIResult<ListResponse> = get("/conversations.list", &token)
             .query(&ListRequest {
                 limit: 200,
                 exclude_archived: true,
@@ -122,22 +123,23 @@ async fn get_channel_map(token: SlackAccessToken) -> Result<ChannelMap, SlackErr
             .json()
             .await?;
 
-        if res.ok {
-            channels.append(&mut res.channels);
+        match res {
+            APIResult::Ok(mut res) => {
+                channels.append(&mut res.channels);
 
-            cursor = res.response_metadata.next_cursor;
-            if cursor.is_some() {
-                continue;
+                cursor = res.response_metadata.next_cursor;
+                if cursor.is_some() {
+                    continue;
+                }
+
+                let map: ChannelMap = channels
+                    .into_iter()
+                    .map(|meta| (meta.name, meta.id))
+                    .collect();
+
+                break Ok(map);
             }
-
-            let map: ChannelMap = channels
-                .into_iter()
-                .map(|meta| (meta.name, meta.id))
-                .collect();
-
-            break Ok(map);
-        } else {
-            break Err(decode_error(res.error));
+            APIResult::Err(res) => break Err(SlackError::APIResponseError(res.error)),
         }
     }
 }
