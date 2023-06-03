@@ -1,3 +1,7 @@
+# The default GitHub runner image comes with a bunch of software preinstalled.
+# Typically this doesn't matter, however with Cargo it appears to interfere,
+# hence the `rm -rf ~/.cargo/` steps.
+
 name: Deploy
 
 on:
@@ -19,3 +23,22 @@ jobs:
           docker tag mercury registry.fly.io/mercury-test:latest
           docker push registry.fly.io/mercury-test:latest
       - run: nix develop .#ops -c flyctl deploy -t ${{ secrets.FLY_AUTH_TOKEN }}
+
+  docs:
+    name: Publish docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v3
+      - run: rm -rf ~/.cargo/
+      - uses: cachix/install-nix-action@v21
+      - run: |
+          nix develop -c cargo doc --no-deps
+          echo '<meta http-equiv="refresh" content="0; url=mercury">' > ./target/doc/index.html
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./target/doc/
+      - uses: actions/deploy-pages@v2
