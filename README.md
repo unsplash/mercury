@@ -6,8 +6,6 @@ The guide of souls to the underworld [^1]. An alternative notification system to
 
 Mercury is designed for easy plug and play in CI, which typically "knows" when something is deployed, broken, etc.
 
-Run the following in a CI pipeline shell or script:
-
 ```sh
 curl <HOST>/api/v1/slack -X POST \
     --oauth2-bearer <SLACK_TOKEN> \
@@ -17,34 +15,38 @@ curl <HOST>/api/v1/slack -X POST \
     -d link="https://github.com/unsplash/mercury"
 ```
 
-## Hosting
-
-Mercury is hosted on [Fly](https://fly.io) \*. The app can principally be deployed anywhere that accepts Docker images. The server runs on `$PORT`, defaulting to port 80.
-
-<sup>\* It's currently hosted on @samhh's personal Fly account, accessible at [mercury-test.fly.dev](https://mercury-test.fly.dev). This is temporary.</sup>
-
-### Security
-
-Like Otto before it, Mercury is currently unauthenticated. Whilst this is the case, our Slack instance's peace is protected essentially only by obscurity. It is therefore recommended to avoid using Mercury in public repos.
-
 ## Contributing
 
 Mercury is written in Rust. This offers a few benefits including:
 
-- Outstanding tooling.
+- Outstanding first-party tooling and reproducible builds via Nix.
 - A strong, expressive type system inspired by functional languages.
 - More approachable to contributors outside of the Web team than something like Haskell.
-- Acts as a test bed for Rust at Unsplash; timely with Fastly C@E in mind.
+- Acts as a test bed for Rust at Unsplash; timely with [Fastly C@E](https://developer.fastly.com/learning/compute/rust/) in mind.
 
-### Building
+The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/), which is recommended for development:
 
-The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/), which is recommended for development.
+```console
+$ cargo run
+$ cargo check
+$ cargo test
+$ cargo fmt
+$ cargo clippy
+```
 
-It's also possible to build directly with Nix. This can be leveraged to build a hermetic Docker image. Example:
+## Hosting
+
+Mercury is hosted on [Fly](https://fly.io) \*.
+
+We can leverage Nix's reproducible builds to build a hermetic Docker image which can principally be deployed anywhere:
 
 ```console
 $ nix build ".#dockerImage" && ./result | podman load
-$ podman run --rm -p 80 -e SLACK_TOKEN mercury
+$ podman run -p 80 mercury
 ```
+
+The server runs on `$PORT`, defaulting to port 80.
+
+<sup>\* It's currently hosted on @samhh's personal Fly account, accessible at [mercury-test.fly.dev](https://mercury-test.fly.dev). This is temporary.</sup>
 
 [^1]: https://en.wikipedia.org/wiki/Mercury_(mythology)
