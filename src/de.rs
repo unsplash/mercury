@@ -53,11 +53,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_intentional_failure() {
-        assert!(false);
-    }
-
-    #[test]
     fn test_only_true() {
         #[derive(Debug, PartialEq, Eq, serde::Deserialize)]
         struct T {
