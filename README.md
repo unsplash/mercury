@@ -11,7 +11,7 @@ curl <HOST>/api/v1/slack -X POST \
     --oauth2-bearer <SLACK_TOKEN> \
     -d channel=playground \
     -d title=Mercury \
-    -d desc="Running the example"
+    -d desc="Running the example" \
     -d link="https://github.com/unsplash/mercury"
 ```
 
