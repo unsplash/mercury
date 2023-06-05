@@ -89,7 +89,7 @@ impl SlackClient {
         channel_name: &ChannelName,
         token: &SlackAccessToken,
     ) -> Result<ChannelId, SlackError> {
-        let map = self.get_channel_map(token.clone()).await?;
+        let map = self.get_channel_map(token).await?;
 
         // Channel names can't contain hashes, so by doing this we can support
         // consumers supplying (or not) a leading hash.
@@ -133,7 +133,10 @@ impl SlackClient {
     /// Get a map from channel names to channel IDs. The first successful result of
     /// this function is cached, meaning that there's a risk of the map becoming
     /// stale should channels be renamed.
-    async fn get_channel_map(&mut self, token: SlackAccessToken) -> Result<ChannelMap, SlackError> {
+    async fn get_channel_map(
+        &mut self,
+        token: &SlackAccessToken,
+    ) -> Result<ChannelMap, SlackError> {
         match &self.channel_map {
             Some(x) => Ok(x.to_owned()),
             None => {
@@ -142,7 +145,7 @@ impl SlackClient {
 
                 loop {
                     let res: APIResult<ListResponse> = self
-                        .get("/conversations.list", &token)
+                        .get("/conversations.list", token)
                         .query(&ListRequest {
                             limit: 200,
                             exclude_archived: true,
