@@ -1,5 +1,4 @@
-//! Supports posting a structured message to any Slack channel. The
-//! [message format][message::Message] is intentionally a little generalised.
+//! Post a structured [Message][message::Message] to any Slack channel.
 //!
 //! To get started and obtain an access token, create a Slack app with the
 //! following app manifest:
@@ -29,10 +28,10 @@
 //! `channels:join` is optional if you manually add the bot to the channels
 //! you'd like to post to.
 
-mod api;
+pub mod api;
 pub mod auth;
 mod block;
-pub mod channel;
+mod channel;
 pub mod error;
-pub mod mention;
+mod mention;
 pub mod message;

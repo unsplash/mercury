@@ -5,12 +5,16 @@
 //! The only communication mechanism currently supported is [Slack][slack].
 
 use dotenvy::dotenv;
+use router::Deps;
+use slack::api::{SlackClient, API_BASE};
 use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tracing::{info, warn};
 
-pub mod de;
+mod de;
 mod router;
-pub mod slack;
+mod slack;
 
 /// Application entrypoint. Initialises tracing, checks for environment
 /// variables, binds to 0.0.0.0, and starts the server.
@@ -36,8 +40,13 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     info!("Listening on {}", addr.to_string());
 
+    let slack_client = SlackClient::new(API_BASE.into());
+    let deps = Deps {
+        slack_client: Arc::new(Mutex::new(slack_client)),
+    };
+
     axum::Server::bind(&addr)
-        .serve(router::new().into_make_service())
+        .serve(router::new(deps).into_make_service())
         .await
         .expect("Failed to start server");
 }

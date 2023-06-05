@@ -36,46 +36,54 @@ struct MessageResponse {
     ok: bool,
 }
 
-/// Post a message in a channel, joining it if necessary.
-pub async fn post_message(msg: &Message, token: &SlackAccessToken) -> Result<(), SlackError> {
-    let channel_id = get_channel_id(&msg.channel, token).await?;
+impl SlackClient {
+    /// Post a message in a channel, joining it if necessary.
+    pub async fn post_message(
+        &mut self,
+        msg: &Message,
+        token: &SlackAccessToken,
+    ) -> Result<(), SlackError> {
+        let channel_id = self.get_channel_id(&msg.channel, token).await?;
 
-    let res = try_post_message(&channel_id, msg, token).await;
+        let res = self.try_post_message(&channel_id, msg, token).await;
 
-    match res {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            // If we've failed to post the message because we're not in the
-            // channel, try joining the channel and posting the message again.
-            if is_not_in_channel(&e) {
-                join_channel(&channel_id, token).await?;
-                try_post_message(&channel_id, msg, token).await
-            } else {
-                Err(e)
+        match res {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                // If we've failed to post the message because we're not in the
+                // channel, try joining the channel and posting the message again.
+                if is_not_in_channel(&e) {
+                    self.join_channel(&channel_id, token).await?;
+                    self.try_post_message(&channel_id, msg, token).await
+                } else {
+                    Err(e)
+                }
             }
         }
     }
-}
 
-/// Try to post a message assuming we've already joined the channel.
-async fn try_post_message(
-    channel_id: &ChannelId,
-    msg: &Message,
-    token: &SlackAccessToken,
-) -> Result<(), SlackError> {
-    let res: APIResult<MessageResponse> = post("/chat.postMessage", token)
-        .json(&MessageRequest {
-            channel: channel_id,
-            blocks: build_blocks(msg),
-        })
-        .send()
-        .await?
-        .json()
-        .await?;
+    /// Try to post a message assuming we've already joined the channel.
+    async fn try_post_message(
+        &self,
+        channel_id: &ChannelId,
+        msg: &Message,
+        token: &SlackAccessToken,
+    ) -> Result<(), SlackError> {
+        let res: APIResult<MessageResponse> = self
+            .post("/chat.postMessage", token)
+            .json(&MessageRequest {
+                channel: channel_id,
+                blocks: build_blocks(msg),
+            })
+            .send()
+            .await?
+            .json()
+            .await?;
 
-    match res {
-        APIResult::Ok(_) => Ok(()),
-        APIResult::Err(res) => Err(SlackError::APIResponseError(res.error)),
+        match res {
+            APIResult::Ok(_) => Ok(()),
+            APIResult::Err(res) => Err(SlackError::APIResponseError(res.error)),
+        }
     }
 }
 

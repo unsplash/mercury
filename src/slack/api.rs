@@ -1,30 +1,42 @@
 //! Type definitions and helpers for the Slack API.
 
-use super::auth::*;
-use once_cell::sync::Lazy;
+use super::{auth::*, channel::ChannelMap};
 use serde::Deserialize;
 
 /// The base URL of the Slack API.
-const API_BASE: &str = "https://slack.com/api";
+pub const API_BASE: &str = "https://slack.com/api";
 
-/// A reusable client that holds a connection pool internally, as per
-/// [reqwest::Client].
-//`Lazy` allows us to safely reuse the client within this module rather than
-// drill it all the way down from the router.
-static CLIENT: Lazy<reqwest::Client> = Lazy::new(reqwest::Client::new);
-
-/// Create a GET request to any Slack API endpoint, handling authentication.
-pub fn get<T: ToString>(path: T, token: &SlackAccessToken) -> reqwest::RequestBuilder {
-    CLIENT
-        .get(API_BASE.to_owned() + &path.to_string())
-        .header(reqwest::header::AUTHORIZATION, to_auth_header_val(token))
+/// Holds a client request pool and a channel map against a base URL.
+pub struct SlackClient {
+    client: reqwest::Client,
+    base_url: String,
+    pub(super) channel_map: Option<ChannelMap>,
 }
 
-/// Create a POST request to any Slack API endpoint, handling authentication.
-pub fn post<T: ToString>(path: T, token: &SlackAccessToken) -> reqwest::RequestBuilder {
-    CLIENT
-        .post(API_BASE.to_owned() + &path.to_string())
-        .header(reqwest::header::AUTHORIZATION, to_auth_header_val(token))
+impl SlackClient {
+    /// Instantiate against a given base URL, enabling easy mocking. For
+    /// real-world usage see [API_BASE].
+    pub fn new(base_url: String) -> Self {
+        SlackClient {
+            client: reqwest::Client::new(),
+            base_url,
+            channel_map: None,
+        }
+    }
+
+    /// Create a GET request to any Slack API endpoint, handling authentication.
+    pub fn get<T: ToString>(&self, path: T, token: &SlackAccessToken) -> reqwest::RequestBuilder {
+        self.client
+            .get(self.base_url.clone() + &path.to_string())
+            .header(reqwest::header::AUTHORIZATION, to_auth_header_val(token))
+    }
+
+    /// Create a POST request to any Slack API endpoint, handling authentication.
+    pub fn post<T: ToString>(&self, path: T, token: &SlackAccessToken) -> reqwest::RequestBuilder {
+        self.client
+            .post(self.base_url.clone() + &path.to_string())
+            .header(reqwest::header::AUTHORIZATION, to_auth_header_val(token))
+    }
 }
 
 /// Slack's API returns a common "untagged" response, representing whether a
