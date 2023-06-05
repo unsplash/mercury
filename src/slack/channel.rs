@@ -5,6 +5,7 @@ use super::{api::*, auth::SlackAccessToken, error::SlackError};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
 use std::{collections::HashMap, fmt};
+use tracing::info;
 
 /// Channel names as are visible in the Slack UI, with or without the leading
 /// hash.
@@ -167,6 +168,8 @@ impl SlackClient {
                                 .collect();
 
                             self.channel_map = Some(map.to_owned());
+                            info!("{} channels cached", map.len());
+
                             break Ok(map);
                         }
                         APIResult::Err(res) => break Err(SlackError::APIResponseError(res.error)),
