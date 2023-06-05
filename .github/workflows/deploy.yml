@@ -32,7 +32,7 @@ jobs:
             -d channel=playground \
             -d title='🚀 Mercury' \
             -d desc='A new deployment has succeeded.' \
-            -d link='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            -d link='${{ github.server_url }}/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}'
 
   docs:
     name: Publish docs
