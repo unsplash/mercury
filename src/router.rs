@@ -62,6 +62,7 @@ async fn slack_handler(
         Ok(_) => (StatusCode::OK, String::new()),
         Err(e) => {
             let code = match &e {
+                e if is_unauthenticated(e) => StatusCode::UNAUTHORIZED,
                 SlackError::APIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 SlackError::APIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 SlackError::UnknownChannel(_) => StatusCode::BAD_REQUEST,
@@ -72,6 +73,15 @@ async fn slack_handler(
             error!(es);
             (code, es)
         }
+    }
+}
+
+/// Parse Slack's API response error to determine if the issue is that the
+/// access token failed to provide authentication.
+fn is_unauthenticated(res: &SlackError) -> bool {
+    match res {
+        SlackError::APIResponseError(e) => e == "invalid_auth",
+        _ => false,
     }
 }
 
@@ -225,7 +235,7 @@ mod tests {
 
         list_mock.assert_async().await;
 
-        assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
         assert_eq!(
             plaintext_body(res.into_body()).await,
             "Slack API returned error: invalid_auth"
