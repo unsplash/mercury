@@ -66,10 +66,6 @@ pub enum APIResult<T> {
 // The `ok` field is checked here, and should be checked on responses too,
 // primarily to ensure appropriate deserialization behaviour in case of an
 // otherwise empty successful response.
-//
-// Ideally we'd be able to use `ok` as a tag, rather than defining `APIResult`
-// as untagged. See:
-//   <https://github.com/serde-rs/serde/issues/745#issuecomment-294314786>
 #[derive(Deserialize)]
 pub struct ErrorResponse {
     #[allow(dead_code)]

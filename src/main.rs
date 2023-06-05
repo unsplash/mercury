@@ -20,9 +20,6 @@ mod slack;
 /// variables, binds to 0.0.0.0, and starts the server.
 #[tokio::main]
 async fn main() {
-    // We currently only have tracing (to stdout) for server responses and
-    // manual traces. It'd be nice to get tracing for client requests as well:
-    //   https://github.com/seanmonstar/reqwest/issues/155
     tracing_subscriber::fmt()
         .with_target(false)
         .compact()

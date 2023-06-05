@@ -47,9 +47,6 @@ pub fn new(deps: Deps) -> Router {
 /// present.
 ///
 /// Accepts a [Message] in `x-www-form-urlencoded` format.
-// Currently this only supports form bodies. For JSON as well there'll be some
-// boilerplate, see:
-//   https://github.com/tokio-rs/axum/issues/1654
 async fn slack_handler(
     State(slack_client): State<Arc<Mutex<SlackClient>>>,
     TypedHeader(t): TypedHeader<headers::Authorization<headers::authorization::Bearer>>,
