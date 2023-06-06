@@ -15,19 +15,21 @@ use axum::{
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tracing::error;
 
 /// Instantiate a new Slack subrouter.
-pub fn slack_router(slack_client: Arc<Mutex<SlackClient>>) -> Router {
+pub fn slack_router(slack_client: Arc<Mutex<SlackClient>>, token: SlackAccessToken) -> Router {
     Router::new()
         .route("/", post(msg_handler))
+        .layer(ValidateRequestHeaderLayer::bearer(&token.0))
         .with_state(slack_client)
 }
 
 /// Handler for the POST subroute `/`.
 ///
 /// A `Bearer` `Authorization` header containing a Slack access token must be
-/// present.
+/// present and must match that found in `$SLACK_TOKEN`.
 ///
 /// Accepts a [Message] in `x-www-form-urlencoded` format.
 async fn msg_handler(

@@ -8,7 +8,7 @@
 
 use crate::{
     heroku::{auth::HerokuSecret, router::heroku_router},
-    slack::{api::SlackClient, router::slack_router},
+    slack::{api::SlackClient, auth::SlackAccessToken, router::slack_router},
 };
 use axum::{http::StatusCode, routing::get, Router};
 use std::sync::Arc;
@@ -19,6 +19,7 @@ use tracing::Level;
 /// Dependencies shared by routes across requests.
 pub struct Deps {
     pub slack_client: Arc<Mutex<SlackClient>>,
+    pub slack_token: SlackAccessToken,
     pub heroku_secret: Option<HerokuSecret>,
 }
 
@@ -29,7 +30,7 @@ pub fn new(deps: Deps) -> Router {
         .on_response(trace::DefaultOnResponse::new().level(Level::INFO));
 
     let v1 = Router::new()
-        .nest("/slack", slack_router(deps.slack_client))
+        .nest("/slack", slack_router(deps.slack_client, deps.slack_token))
         .nest("/heroku", heroku_router())
         .layer(trace_layer)
         // Exclude the health check route from tracing.
@@ -50,15 +51,16 @@ mod tests {
     use mockito::Matcher;
     use tower::{Service, ServiceExt};
 
-    fn router(base_slack_url: String) -> Router {
+    fn router(base_slack_url: String, slack_token: SlackAccessToken) -> Router {
         super::new(Deps {
             slack_client: Arc::new(Mutex::new(SlackClient::new(base_slack_url))),
+            slack_token,
             heroku_secret: None,
         })
     }
 
     fn router_() -> Router {
-        router("any".to_owned())
+        router("any".to_owned(), SlackAccessToken("foobar".to_owned()))
     }
 
     async fn server() -> mockito::ServerGuard {
@@ -87,6 +89,7 @@ mod tests {
         let req = Request::builder()
             .method("GET")
             .uri("/api/v1/slack")
+            .header("Authorization", "Bearer foobar")
             .body(Body::empty())
             .unwrap();
 
@@ -105,11 +108,8 @@ mod tests {
 
         let res = router_().oneshot(req).await.unwrap();
 
-        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-        assert_eq!(
-            plaintext_body(res.into_body()).await,
-            "Header of type `authorization` was missing"
-        );
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+        assert!(plaintext_body(res.into_body()).await.is_empty());
     }
 
     #[tokio::test]
@@ -157,7 +157,33 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_bad_auth() {
+    async fn test_bad_auth_for_mercury() {
+        let fields = &[
+            ("channel".to_owned(), "channel-name".to_owned()),
+            ("title".to_owned(), "a title".to_owned()),
+            ("desc".to_owned(), "a description".to_owned()),
+        ];
+        let msg = serde_urlencoded::to_string(fields).unwrap();
+
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/slack")
+            .header("Authorization", "Bearer foobar")
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(Body::from(msg))
+            .unwrap();
+
+        let res = router("any".to_owned(), SlackAccessToken("not foobar".to_owned()))
+            .oneshot(req)
+            .await
+            .unwrap();
+
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+        assert!(plaintext_body(res.into_body()).await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_bad_auth_for_slack() {
         let fields = &[
             ("channel".to_owned(), "channel-name".to_owned()),
             ("title".to_owned(), "a title".to_owned()),
@@ -187,7 +213,10 @@ mod tests {
             .create_async()
             .await;
 
-        let res = router(srv.url()).oneshot(req).await.unwrap();
+        let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            .oneshot(req)
+            .await
+            .unwrap();
 
         list_mock.assert_async().await;
 
@@ -232,7 +261,10 @@ mod tests {
             .create_async()
             .await;
 
-        let res = router(srv.url()).oneshot(req).await.unwrap();
+        let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            .oneshot(req)
+            .await
+            .unwrap();
 
         list_mock.assert_async().await;
 
@@ -290,7 +322,10 @@ mod tests {
             .create_async()
             .await;
 
-        let res = router(srv.url()).oneshot(req).await.unwrap();
+        let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            .oneshot(req)
+            .await
+            .unwrap();
 
         list_mock.assert_async().await;
         msg_mock.assert_async().await;
@@ -367,7 +402,10 @@ mod tests {
             .create_async()
             .await;
 
-        let res = router(srv.url()).oneshot(req).await.unwrap();
+        let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            .oneshot(req)
+            .await
+            .unwrap();
 
         list_mock.assert_async().await;
         msg1_mock.assert_async().await;
@@ -443,7 +481,7 @@ mod tests {
             .create_async()
             .await;
 
-        let mut rt = router(srv.url());
+        let mut rt = router(srv.url(), SlackAccessToken("foobar".to_owned()));
         let res1 = rt.call(req1).await.unwrap();
         let res2 = rt.call(req2).await.unwrap();
 

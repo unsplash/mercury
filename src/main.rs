@@ -7,9 +7,11 @@
 use dotenvy::dotenv;
 use heroku::auth::HerokuSecret;
 use router::Deps;
-use slack::api::{SlackClient, API_BASE};
-use std::sync::Arc;
-use std::{env, net::SocketAddr};
+use slack::{
+    api::{SlackClient, API_BASE},
+    auth::SlackAccessToken,
+};
+use std::{env, net::SocketAddr, sync::Arc};
 use tokio::sync::{oneshot, Mutex};
 use tracing::{info, warn};
 
@@ -36,31 +38,37 @@ async fn main() {
         .map(|x| x.parse().expect("Could not parse PORT to u16"))
         .unwrap_or(80);
 
+    let slack_token = env::var("SLACK_TOKEN")
+        .map(SlackAccessToken)
+        .expect("No $HEROKU_SECRET environment variable found");
+
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    server_(addr).await;
+    server_(addr, slack_token).await;
 }
 
 /// Initialise a server without graceful shutdown.
-async fn server_(addr: SocketAddr) {
+async fn server_(addr: SocketAddr, slack_token: SlackAccessToken) {
     // Giving a receiver that will never resolve.
-    server(addr, oneshot::channel::<()>().1).await;
+    server(addr, slack_token, oneshot::channel::<()>().1).await;
 }
 
 /// Initialise a server with graceful shutdown via `rx`.
-async fn server(addr: SocketAddr, rx: oneshot::Receiver<()>) {
-    info!("Listening on {}", addr.to_string());
-
+async fn server(addr: SocketAddr, slack_token: SlackAccessToken, rx: oneshot::Receiver<()>) {
     let heroku_secret = env::var("HEROKU_SECRET").ok().map(HerokuSecret);
     if heroku_secret.is_none() {
         warn!("No $HEROKU_SECRET environment variable found");
     }
 
     let slack_client = SlackClient::new(API_BASE.into());
+
     let deps = Deps {
         slack_client: Arc::new(Mutex::new(slack_client)),
+        slack_token,
         heroku_secret,
     };
+
+    info!("Listening on {}", addr.to_string());
 
     axum::Server::bind(&addr)
         .serve(router::new(deps).into_make_service())
@@ -87,7 +95,7 @@ mod tests {
             .unwrap();
 
         // Move the server into the background so that it's not blocking.
-        tokio::spawn(async move { server(addr, rx).await });
+        tokio::spawn(async move { server(addr, SlackAccessToken("any".to_owned()), rx).await });
 
         let res = reqwest::Client::new()
             .get(format!("http://localhost:{}/api/v1/health", addr.port()))

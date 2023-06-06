@@ -15,7 +15,7 @@ reqwest = { version = "0.11", features = ["json"] }
 url = { version = "2.3", features = ["serde"] }
 axum = { version = "0.6", features = ["headers", "macros"] }
 tower = "0.4"
-tower-http = { version = "0.4", features = ["trace"] }
+tower-http = { version = "0.4", features = ["trace", "validate-request", "auth"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 mockito = "1.0"
