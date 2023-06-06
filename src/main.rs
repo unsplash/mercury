@@ -5,10 +5,11 @@
 //! The only communication mechanism currently supported is [Slack][slack].
 
 use dotenvy::dotenv;
+use heroku::auth::HerokuSecret;
 use router::Deps;
 use slack::api::{SlackClient, API_BASE};
-use std::net::SocketAddr;
 use std::sync::Arc;
+use std::{env, net::SocketAddr};
 use tokio::sync::{oneshot, Mutex};
 use tracing::{info, warn};
 
@@ -31,7 +32,7 @@ async fn main() {
         warn!("No .env found");
     }
 
-    let port: u16 = std::env::var("PORT")
+    let port: u16 = env::var("PORT")
         .map(|x| x.parse().expect("Could not parse PORT to u16"))
         .unwrap_or(80);
 
@@ -50,9 +51,15 @@ async fn server_(addr: SocketAddr) {
 async fn server(addr: SocketAddr, rx: oneshot::Receiver<()>) {
     info!("Listening on {}", addr.to_string());
 
+    let heroku_secret = env::var("HEROKU_SECRET").ok().map(HerokuSecret);
+    if heroku_secret.is_none() {
+        warn!("No $HEROKU_SECRET environment variable found");
+    }
+
     let slack_client = SlackClient::new(API_BASE.into());
     let deps = Deps {
         slack_client: Arc::new(Mutex::new(slack_client)),
+        heroku_secret,
     };
 
     axum::Server::bind(&addr)

@@ -7,7 +7,7 @@
 //! POST: `/api/v1/heroku/hook`
 
 use crate::{
-    heroku::router::heroku_router,
+    heroku::{auth::HerokuSecret, router::heroku_router},
     slack::{api::SlackClient, router::slack_router},
 };
 use axum::{http::StatusCode, routing::get, Router};
@@ -19,6 +19,7 @@ use tracing::Level;
 /// Dependencies shared by routes across requests.
 pub struct Deps {
     pub slack_client: Arc<Mutex<SlackClient>>,
+    pub heroku_secret: Option<HerokuSecret>,
 }
 
 /// Instantiate a new router with tracing.
@@ -52,6 +53,7 @@ mod tests {
     fn router(base_slack_url: String) -> Router {
         super::new(Deps {
             slack_client: Arc::new(Mutex::new(SlackClient::new(base_slack_url))),
+            heroku_secret: None,
         })
     }
 
