@@ -1,8 +1,8 @@
 //! Slack subrouter definition.
 //!
-//! The following route is supported:
+//! The following subroute is supported:
 //!
-//! POST: `/api/v1/slack`
+//! POST: `/`
 
 use crate::slack::{api::SlackClient, auth::SlackAccessToken, error::SlackError, message::Message};
 use axum::{
@@ -24,7 +24,7 @@ pub fn slack_router(slack_client: Arc<Mutex<SlackClient>>) -> Router {
         .with_state(slack_client)
 }
 
-/// Handler for the POST route `/api/v1/slack`.
+/// Handler for the POST subroute `/`.
 ///
 /// A `Bearer` `Authorization` header containing a Slack access token must be
 /// present.

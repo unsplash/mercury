@@ -1,8 +1,8 @@
 //! Heroku subrouter definition.
 //!
-//! The following route is supported:
+//! The following subroute is supported:
 //!
-//! POST: `/api/v1/heroku/hook`
+//! POST: `/hook`
 
 use axum::{http::StatusCode, response::IntoResponse, routing::post, Router};
 
@@ -11,7 +11,7 @@ pub fn heroku_router() -> Router {
     Router::new().route("/hook", post(webhook_handler))
 }
 
-/// Handler for the POST route `/api/v1/heroku/hook`.
+/// Handler for the POST subroute `/hook`.
 ///
 /// A `Heroku-Webhook-Hmac-SHA256` header containing the HMAC SHA256 signature
 /// of the request body, signed with the shared secret, must be present.
