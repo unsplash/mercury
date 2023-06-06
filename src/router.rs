@@ -4,8 +4,12 @@
 //!
 //! GET: `/api/v1/health`
 //! POST: `/api/v1/slack`
+//! POST: `/api/v1/heroku/hook`
 
-use crate::slack::{api::SlackClient, router::slack_router};
+use crate::{
+    heroku::router::heroku_router,
+    slack::{api::SlackClient, router::slack_router},
+};
 use axum::{http::StatusCode, routing::get, Router};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -25,6 +29,7 @@ pub fn new(deps: Deps) -> Router {
 
     let v1 = Router::new()
         .nest("/slack", slack_router(deps.slack_client))
+        .nest("/heroku", heroku_router())
         .layer(trace_layer)
         // Exclude the health check route from tracing.
         .route("/health", get(|| async { StatusCode::OK }));

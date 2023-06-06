@@ -13,6 +13,7 @@ use tokio::sync::{oneshot, Mutex};
 use tracing::{info, warn};
 
 mod de;
+mod heroku;
 mod router;
 mod slack;
 
