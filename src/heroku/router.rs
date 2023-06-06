@@ -16,8 +16,9 @@ pub fn heroku_router() -> Router {
 /// A `Heroku-Webhook-Hmac-SHA256` header containing the HMAC SHA256 signature
 /// of the request body, signed with the shared secret, must be present.
 ///
-/// Accepts a `platform` query param indicating the supported [platform][TODO],
-/// along with that platform's respective query params.
+/// Accepts a `platform` query param indicating the supported
+/// [platform][super::platforms], along with that platform's respective query
+/// params.
 async fn webhook_handler() -> impl IntoResponse {
     StatusCode::NOT_IMPLEMENTED
 }

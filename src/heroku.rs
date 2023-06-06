@@ -13,4 +13,6 @@
 //! `/api/v1/heroku/hook?platform=slack&channel=playground`. The message
 //! structure is fixed.
 
+pub mod auth;
+mod platforms;
 pub mod router;
