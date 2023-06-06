@@ -2,6 +2,7 @@
 //!
 //! The following routes are supported:
 //!
+//! GET: `/api/v1/health`
 //! POST: `/api/v1/slack`
 
 use crate::slack::{api::SlackClient, auth::SlackAccessToken, error::SlackError, message::Message};
@@ -10,7 +11,7 @@ use axum::{
     headers,
     http::StatusCode,
     response::IntoResponse,
-    routing::post,
+    routing::{get, post},
     Router, TypedHeader,
 };
 use std::sync::Arc;
@@ -29,16 +30,19 @@ pub fn new(deps: Deps) -> Router {
         .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
         .on_response(trace::DefaultOnResponse::new().level(Level::INFO));
 
-    // We only have a single route for now, but this design is extensible.
-    //
-    // Axum implicitly takes care of all unhappy paths.
-    let v1 = Router::new()
-        .route("/slack", post(slack_handler))
+    let slack = Router::new()
+        .route("/", post(slack_handler))
         .with_state(deps.slack_client);
+
+    let v1 = Router::new()
+        .nest("/slack", slack)
+        .layer(trace_layer)
+        // Exclude the health check route from tracing.
+        .route("/health", get(|| async { StatusCode::OK }));
 
     let api = Router::new().nest("/v1", v1);
 
-    Router::new().nest("/api", api).layer(trace_layer)
+    Router::new().nest("/api", api)
 }
 
 /// Handler for the POST route `/api/v1/slack`.
