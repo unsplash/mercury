@@ -2,7 +2,7 @@
 //!
 //! The following subroute is supported:
 //!
-//! POST: `/hook`
+//! - POST: `/hook`
 
 use axum::{http::StatusCode, response::IntoResponse, routing::post, Router};
 

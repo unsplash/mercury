@@ -2,9 +2,9 @@
 //!
 //! The following routes are supported:
 //!
-//! GET: `/api/v1/health`
-//! POST: `/api/v1/slack`
-//! POST: `/api/v1/heroku/hook`
+//! - GET: `/api/v1/health`
+//! - POST: `/api/v1/slack`
+//! - POST: `/api/v1/heroku/hook`
 
 use crate::{
     heroku::{auth::HerokuSecret, router::heroku_router},

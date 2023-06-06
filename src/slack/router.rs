@@ -2,7 +2,7 @@
 //!
 //! The following subroute is supported:
 //!
-//! POST: `/`
+//! - POST: `/`
 
 use crate::slack::{api::SlackClient, auth::SlackAccessToken, error::SlackError, message::Message};
 use axum::{
