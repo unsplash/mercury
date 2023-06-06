@@ -42,7 +42,37 @@ pub fn new(deps: Deps) -> Router {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_general {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt;
+
+    fn router() -> Router {
+        super::new(Deps {
+            slack_client: Arc::new(Mutex::new(SlackClient::new("any".to_owned()))),
+            slack_token: SlackAccessToken("any".to_owned()),
+            heroku_secret: None,
+        })
+    }
+
+    #[tokio::test]
+    async fn test_not_found() {
+        let req = Request::builder()
+            .uri("/bad/route")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = router().oneshot(req).await.unwrap();
+
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    }
+}
+
+#[cfg(test)]
+mod tests_slack {
     use super::*;
     use axum::{
         body::Body,
@@ -75,7 +105,7 @@ mod tests {
     #[tokio::test]
     async fn test_not_found() {
         let req = Request::builder()
-            .uri("/bad/route")
+            .uri("/api/v1/slack/oops")
             .body(Body::empty())
             .unwrap();
 
