@@ -7,6 +7,7 @@
 //! Webhooks must be created externally, supplying Mercury's
 //! `/api/v1/heroku/hook` endpoint as the target URL. The `platform` query param
 //! determines where messages are sent, along with platform-specific metadata.
+//! The webhook entity with the relevant events is `api:release`.
 //!
 //! Currently the only supported platform is [Slack][super::slack] which takes
 //! an additional `channel` query param, for example
