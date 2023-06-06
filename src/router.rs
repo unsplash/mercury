@@ -5,19 +5,12 @@
 //! GET: `/api/v1/health`
 //! POST: `/api/v1/slack`
 
-use crate::slack::{api::SlackClient, auth::SlackAccessToken, error::SlackError, message::Message};
-use axum::{
-    extract::{self, State},
-    headers,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, post},
-    Router, TypedHeader,
-};
+use crate::slack::{api::SlackClient, router::slack_router};
+use axum::{http::StatusCode, routing::get, Router};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_http::trace::{self, TraceLayer};
-use tracing::{error, Level};
+use tracing::Level;
 
 /// Dependencies shared by routes across requests.
 pub struct Deps {
@@ -30,12 +23,8 @@ pub fn new(deps: Deps) -> Router {
         .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
         .on_response(trace::DefaultOnResponse::new().level(Level::INFO));
 
-    let slack = Router::new()
-        .route("/", post(slack_handler))
-        .with_state(deps.slack_client);
-
     let v1 = Router::new()
-        .nest("/slack", slack)
+        .nest("/slack", slack_router(deps.slack_client))
         .layer(trace_layer)
         // Exclude the health check route from tracing.
         .route("/health", get(|| async { StatusCode::OK }));
@@ -43,50 +32,6 @@ pub fn new(deps: Deps) -> Router {
     let api = Router::new().nest("/v1", v1);
 
     Router::new().nest("/api", api)
-}
-
-/// Handler for the POST route `/api/v1/slack`.
-///
-/// A `Bearer` `Authorization` header containing a Slack access token must be
-/// present.
-///
-/// Accepts a [Message] in `x-www-form-urlencoded` format.
-async fn slack_handler(
-    State(slack_client): State<Arc<Mutex<SlackClient>>>,
-    TypedHeader(t): TypedHeader<headers::Authorization<headers::authorization::Bearer>>,
-    extract::Form(m): extract::Form<Message>,
-) -> impl IntoResponse {
-    let res = slack_client
-        .lock()
-        .await
-        .post_message(&m, &SlackAccessToken(t.token().into()))
-        .await;
-
-    match res {
-        Ok(_) => (StatusCode::OK, String::new()),
-        Err(e) => {
-            let code = match &e {
-                e if is_unauthenticated(e) => StatusCode::UNAUTHORIZED,
-                SlackError::APIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                SlackError::APIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                SlackError::UnknownChannel(_) => StatusCode::BAD_REQUEST,
-            };
-
-            let es = e.to_string();
-
-            error!(es);
-            (code, es)
-        }
-    }
-}
-
-/// Parse Slack's API response error to determine if the issue is that the
-/// access token failed to provide authentication.
-fn is_unauthenticated(res: &SlackError) -> bool {
-    match res {
-        SlackError::APIResponseError(e) => e == "invalid_auth",
-        _ => false,
-    }
 }
 
 #[cfg(test)]
