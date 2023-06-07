@@ -51,16 +51,24 @@ mod tests {
     use mockito::Matcher;
     use tower::{Service, ServiceExt};
 
-    fn router(base_slack_url: String, slack_token: SlackAccessToken) -> Router {
+    fn router(
+        base_slack_url: String,
+        slack_token: SlackAccessToken,
+        heroku_secret: Option<HerokuSecret>,
+    ) -> Router {
         super::new(Deps {
             slack_client: Arc::new(Mutex::new(SlackClient::new(base_slack_url))),
             slack_token,
-            heroku_secret: None,
+            heroku_secret,
         })
     }
 
     fn router_() -> Router {
-        router("any".to_owned(), SlackAccessToken("foobar".to_owned()))
+        router(
+            "any".to_owned(),
+            SlackAccessToken("foobar".to_owned()),
+            Some(HerokuSecret("foobarbaz".to_owned())),
+        )
     }
 
     async fn server() -> mockito::ServerGuard {
@@ -192,10 +200,14 @@ mod tests {
                 .body(Body::from(msg))
                 .unwrap();
 
-            let res = router("any".to_owned(), SlackAccessToken("not foobar".to_owned()))
-                .oneshot(req)
-                .await
-                .unwrap();
+            let res = router(
+                "any".to_owned(),
+                SlackAccessToken("not foobar".to_owned()),
+                None,
+            )
+            .oneshot(req)
+            .await
+            .unwrap();
 
             assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
             assert!(plaintext_body(res.into_body()).await.is_empty());
@@ -232,7 +244,7 @@ mod tests {
                 .create_async()
                 .await;
 
-            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()), None)
                 .oneshot(req)
                 .await
                 .unwrap();
@@ -280,7 +292,7 @@ mod tests {
                 .create_async()
                 .await;
 
-            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()), None)
                 .oneshot(req)
                 .await
                 .unwrap();
@@ -341,7 +353,7 @@ mod tests {
                 .create_async()
                 .await;
 
-            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()), None)
                 .oneshot(req)
                 .await
                 .unwrap();
@@ -421,7 +433,7 @@ mod tests {
                 .create_async()
                 .await;
 
-            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()))
+            let res = router(srv.url(), SlackAccessToken("foobar".to_owned()), None)
                 .oneshot(req)
                 .await
                 .unwrap();
@@ -500,7 +512,7 @@ mod tests {
                 .create_async()
                 .await;
 
-            let mut rt = router(srv.url(), SlackAccessToken("foobar".to_owned()));
+            let mut rt = router(srv.url(), SlackAccessToken("foobar".to_owned()), None);
             let res1 = rt.call(req1).await.unwrap();
             let res2 = rt.call(req2).await.unwrap();
 
