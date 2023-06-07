@@ -41,61 +41,49 @@ async fn webhook_handler(
     // We can't parse this at all yet as we need to compare signatures.
     body_bytes: Bytes,
 ) -> impl IntoResponse {
-    match &deps.heroku_secret {
-        None => (StatusCode::PRECONDITION_FAILED, String::new()),
-        Some(heroku_secret) => {
-            if content_type != headers::ContentType::json() {
-                return (
-                    StatusCode::UNSUPPORTED_MEDIA_TYPE,
-                    String::from("Requests must have `Content-Type: application/json`"),
-                );
-            }
+    let heroku_secret = deps
+        .heroku_secret
+        .as_ref()
+        .ok_or_else(|| (StatusCode::PRECONDITION_FAILED, String::new()))?;
 
-            let validation = validate_request_signature(heroku_secret, &body_bytes, &headers).await;
+    if content_type != headers::ContentType::json() {
+        return Err((
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            String::from("Requests must have `Content-Type: application/json`"),
+        ));
+    }
 
-            match validation {
-                Err(e) => {
-                    let msg = match e {
-                        SecretError::Missing => "Missing Heroku secret",
-                        SecretError::Invalid => "Invalid Heroku secret",
-                    };
-                    warn!(msg);
+    validate_request_signature(heroku_secret, &body_bytes, &headers)
+        .await
+        .map_err(|e| {
+            let msg = match e {
+                SecretError::Missing => "Missing Heroku secret",
+                SecretError::Invalid => "Invalid Heroku secret",
+            };
+            warn!(msg);
 
-                    (StatusCode::UNAUTHORIZED, String::new())
-                }
-                Ok(()) => {
-                    let decoded = serde_json::from_slice::<HookPayload>(&body_bytes);
+            (StatusCode::UNAUTHORIZED, String::new())
+        })?;
 
-                    match decoded {
-                        Err(e) => {
-                            let msg = format!("Failed to deserialize payload: {}", e);
-                            warn!(msg);
+    let payload = serde_json::from_slice::<HookPayload>(&body_bytes).map_err(|e| {
+        let msg = format!("Failed to deserialize payload: {}", e);
+        warn!(msg);
 
-                            (StatusCode::UNPROCESSABLE_ENTITY, msg)
-                        }
-                        Ok(payload) => {
-                            let res = forward(&deps, &platform, &payload).await;
+        (StatusCode::UNPROCESSABLE_ENTITY, msg)
+    })?;
 
-                            match res {
-                                ForwardResult::Success | ForwardResult::IgnoredAction => {
-                                    (StatusCode::OK, String::new())
-                                }
-                                ForwardResult::UnsupportedEvent(evt) => {
-                                    info!(
-                                        "Could not decode payload to a supported event, found: {}",
-                                        evt
-                                    );
+    let res = forward(&deps, &platform, &payload).await;
 
-                                    (StatusCode::OK, String::new())
-                                }
-                                ForwardResult::Failure(ForwardFailure::ToSlack(e)) => {
-                                    handle_slack_err(&e)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    match res {
+        ForwardResult::Failure(ForwardFailure::ToSlack(e)) => Err(handle_slack_err(&e)),
+        ForwardResult::UnsupportedEvent(evt) => {
+            info!(
+                "Could not decode payload to a supported event, found: {}",
+                evt
+            );
+
+            Ok(())
         }
+        ForwardResult::Success | ForwardResult::IgnoredAction => Ok(()),
     }
 }
