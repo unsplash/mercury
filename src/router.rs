@@ -588,7 +588,10 @@ mod tests {
             let res = router_().oneshot(req).await.unwrap();
 
             assert_eq!(res.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
-            assert!(plaintext_body(res.into_body()).await.is_empty());
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Requests must have `Content-Type: application/json`"
+            );
         }
 
         #[tokio::test]
@@ -681,7 +684,10 @@ mod tests {
             let res = router_().oneshot(req).await.unwrap();
 
             assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
-            assert!(plaintext_body(res.into_body()).await.is_empty());
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Failed to deserialize payload: invalid type: boolean `false`, expected a string at line 4 column 37"
+            );
         }
 
         #[tokio::test]

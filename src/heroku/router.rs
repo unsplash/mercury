@@ -45,7 +45,10 @@ async fn webhook_handler(
         None => (StatusCode::PRECONDITION_FAILED, String::new()),
         Some(heroku_secret) => {
             if content_type != headers::ContentType::json() {
-                return (StatusCode::UNSUPPORTED_MEDIA_TYPE, String::new());
+                return (
+                    StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                    String::from("Requests must have `Content-Type: application/json`"),
+                );
             }
 
             let validation = validate_request_signature(heroku_secret, &body_bytes, &headers).await;
@@ -53,8 +56,8 @@ async fn webhook_handler(
             match validation {
                 Err(e) => {
                     let msg = match e {
-                        SecretError::Missing => "Heroku secret missing from webhook request",
-                        SecretError::Invalid => "Invalid Heroku secret in webhook request",
+                        SecretError::Missing => "Missing Heroku secret",
+                        SecretError::Invalid => "Invalid Heroku secret",
                     };
                     warn!(msg);
 
@@ -65,11 +68,10 @@ async fn webhook_handler(
 
                     match decoded {
                         Err(e) => {
-                            let msg =
-                                format!("Failed to deserialise Heroku webhook payload: {}", e);
+                            let msg = format!("Failed to deserialize payload: {}", e);
                             warn!(msg);
 
-                            (StatusCode::UNPROCESSABLE_ENTITY, String::new())
+                            (StatusCode::UNPROCESSABLE_ENTITY, msg)
                         }
                         Ok(payload) => {
                             let res = forward(&deps, &platform, &payload).await;
@@ -80,7 +82,7 @@ async fn webhook_handler(
                                 }
                                 ForwardResult::UnsupportedEvent(evt) => {
                                     info!(
-                                        "Could not decode webhook payload to a supported event, found: {}",
+                                        "Could not decode payload to a supported event, found: {}",
                                         evt
                                     );
 
