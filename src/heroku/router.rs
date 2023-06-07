@@ -5,7 +5,7 @@
 //! - POST: `/hook`
 
 use super::{auth::*, platform::Platform, webhook::*};
-use crate::router::Deps;
+use crate::{router::Deps, slack::router::handle_slack_err};
 use axum::{
     extract::{self, State},
     headers,
@@ -42,10 +42,10 @@ async fn webhook_handler(
     body_bytes: Bytes,
 ) -> impl IntoResponse {
     match &deps.heroku_secret {
-        None => StatusCode::PRECONDITION_FAILED,
+        None => (StatusCode::PRECONDITION_FAILED, String::new()),
         Some(heroku_secret) => {
             if content_type != headers::ContentType::json() {
-                return StatusCode::UNSUPPORTED_MEDIA_TYPE;
+                return (StatusCode::UNSUPPORTED_MEDIA_TYPE, String::new());
             }
 
             let validation = validate_request_signature(heroku_secret, &body_bytes, &headers).await;
@@ -58,7 +58,7 @@ async fn webhook_handler(
                     };
                     warn!(msg);
 
-                    StatusCode::UNAUTHORIZED
+                    (StatusCode::UNAUTHORIZED, String::new())
                 }
                 Ok(()) => {
                     let decoded = serde_json::from_slice::<HookPayload>(&body_bytes);
@@ -69,14 +69,14 @@ async fn webhook_handler(
                                 format!("Failed to deserialise Heroku webhook payload: {}", e);
                             warn!(msg);
 
-                            StatusCode::UNPROCESSABLE_ENTITY
+                            (StatusCode::UNPROCESSABLE_ENTITY, String::new())
                         }
                         Ok(payload) => {
                             let res = forward(&deps, &platform, &payload).await;
 
                             match res {
                                 ForwardResult::Success | ForwardResult::IgnoredAction => {
-                                    StatusCode::OK
+                                    (StatusCode::OK, String::new())
                                 }
                                 ForwardResult::UnsupportedEvent(evt) => {
                                     info!(
@@ -84,9 +84,11 @@ async fn webhook_handler(
                                         evt
                                     );
 
-                                    StatusCode::OK
+                                    (StatusCode::OK, String::new())
                                 }
-                                ForwardResult::Failure(_e) => StatusCode::INTERNAL_SERVER_ERROR,
+                                ForwardResult::Failure(ForwardFailure::ToSlack(e)) => {
+                                    handle_slack_err(&e)
+                                }
                             }
                         }
                     }

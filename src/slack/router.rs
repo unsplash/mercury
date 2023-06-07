@@ -48,20 +48,22 @@ async fn msg_handler(
 
     match res {
         Ok(_) => (StatusCode::OK, String::new()),
-        Err(e) => {
-            let code = match &e {
-                e if is_unauthenticated(e) => StatusCode::UNAUTHORIZED,
-                SlackError::APIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                SlackError::APIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                SlackError::UnknownChannel(_) => StatusCode::BAD_REQUEST,
-            };
-
-            let es = e.to_string();
-
-            error!(es);
-            (code, es)
-        }
+        Err(e) => handle_slack_err(&e),
     }
+}
+
+pub fn handle_slack_err(e: &SlackError) -> (StatusCode, String) {
+    let code = match &e {
+        e if is_unauthenticated(e) => StatusCode::UNAUTHORIZED,
+        SlackError::APIRequestFailed(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        SlackError::APIResponseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        SlackError::UnknownChannel(_) => StatusCode::BAD_REQUEST,
+    };
+
+    let es = e.to_string();
+
+    error!(es);
+    (code, es)
 }
 
 /// Parse Slack's API response error to determine if the issue is that the

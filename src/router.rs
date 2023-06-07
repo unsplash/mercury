@@ -739,7 +739,7 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn test_slack_failure() {
+        async fn test_slack_failure_auth() {
             let payload = r#"{
                 "data": {
                     "app": {
@@ -784,8 +784,64 @@ mod tests {
 
             list_mock.assert_async().await;
 
+            assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Slack API returned error: invalid_auth"
+            );
+        }
+
+        #[tokio::test]
+        async fn test_slack_failure_unknown() {
+            let payload = r#"{
+                "data": {
+                    "app": {
+                        "name": "any"
+                    },
+                    "description": "Rollback to v1234"
+                },
+                "action": "update"
+            }"#;
+            let sig = "pahzDFn5oWAMM2YMCycs+vFo9JTRIUmfsnuzgM9HXJM=";
+
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Heroku-Webhook-Hmac-SHA256", sig)
+                .header("Content-Type", "application/json")
+                .body(Body::from(payload))
+                .unwrap();
+
+            let list_res = r#"{
+                "ok": false,
+                "error": "something else"
+            }"#;
+
+            let mut srv = server().await;
+
+            let list_mock = srv
+                .mock("GET", "/conversations.list")
+                .match_query(Matcher::Any)
+                .with_body(list_res)
+                .create_async()
+                .await;
+
+            let res = router(
+                srv.url(),
+                SlackAccessToken("foobar".to_owned()),
+                Some(HerokuSecret("foobarbaz".to_owned())),
+            )
+            .oneshot(req)
+            .await
+            .unwrap();
+
+            list_mock.assert_async().await;
+
             assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
-            assert!(plaintext_body(res.into_body()).await.is_empty());
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Slack API returned error: something else"
+            );
         }
 
         #[tokio::test]
