@@ -11,6 +11,11 @@ serde_json = "1.0"
 serde_urlencoded = "0.7"
 url = { version = "2.3", features = ["serde"] }
 
+# Crypto
+base64 = "0.21"
+sha2 = "0.10"
+hmac = "0.12"
+
 # Async
 tokio = { version = "1.28", features = ["macros", "rt-multi-thread"] }
 
