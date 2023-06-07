@@ -4,7 +4,10 @@
 //!
 //! - POST: `/`
 
-use crate::slack::{api::SlackClient, auth::SlackAccessToken, error::SlackError, message::Message};
+use crate::{
+    router::Deps,
+    slack::{auth::SlackAccessToken, error::SlackError, message::Message},
+};
 use axum::{
     extract::{self, State},
     headers,
@@ -13,17 +16,16 @@ use axum::{
     routing::post,
     Router, TypedHeader,
 };
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tracing::error;
 
 /// Instantiate a new Slack subrouter.
-pub fn slack_router(slack_client: Arc<Mutex<SlackClient>>, token: SlackAccessToken) -> Router {
+pub fn slack_router(slack_token: &SlackAccessToken) -> Router<Deps> {
     Router::new()
         .route("/", post(msg_handler))
-        .layer(ValidateRequestHeaderLayer::bearer(&token.0))
-        .with_state(slack_client)
+        // Unsure how to access `Deps` here to obviate the need for the function
+        // parameter.
+        .layer(ValidateRequestHeaderLayer::bearer(&slack_token.0))
 }
 
 /// Handler for the POST subroute `/`.
@@ -31,13 +33,14 @@ pub fn slack_router(slack_client: Arc<Mutex<SlackClient>>, token: SlackAccessTok
 /// A `Bearer` `Authorization` header containing a Slack access token must be
 /// present and must match that found in `$SLACK_TOKEN`.
 ///
-/// Accepts a [Message] in `x-www-form-urlencoded` format.
+/// Accepts a [Message] in `application/x-www-form-urlencoded` format.
 async fn msg_handler(
-    State(slack_client): State<Arc<Mutex<SlackClient>>>,
+    State(deps): State<Deps>,
     TypedHeader(t): TypedHeader<headers::Authorization<headers::authorization::Bearer>>,
     extract::Form(m): extract::Form<Message>,
 ) -> impl IntoResponse {
-    let res = slack_client
+    let res = deps
+        .slack_client
         .lock()
         .await
         .post_message(&m, &SlackAccessToken(t.token().into()))

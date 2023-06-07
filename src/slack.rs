@@ -31,7 +31,7 @@
 pub mod api;
 pub mod auth;
 mod block;
-mod channel;
+pub mod channel;
 pub mod error;
 mod mention;
 pub mod message;

@@ -4,10 +4,21 @@
 //!
 //! - POST: `/hook`
 
-use axum::{http::StatusCode, response::IntoResponse, routing::post, Router};
+use super::{auth::*, platform::Platform, webhook::*};
+use crate::router::Deps;
+use axum::{
+    extract::{self, State},
+    headers,
+    http::{header::HeaderMap, StatusCode},
+    response::IntoResponse,
+    routing::post,
+    Router, TypedHeader,
+};
+use hyper::body::Bytes;
+use tracing::{info, warn};
 
 /// Instantiate a new Heroku subrouter.
-pub fn heroku_router() -> Router {
+pub fn heroku_router() -> Router<Deps> {
     Router::new().route("/hook", post(webhook_handler))
 }
 
@@ -16,9 +27,71 @@ pub fn heroku_router() -> Router {
 /// A `Heroku-Webhook-Hmac-SHA256` header containing the HMAC SHA256 signature
 /// of the request body, signed with the shared secret, must be present.
 ///
-/// Accepts a `platform` query param indicating the supported
-/// [platform][super::platforms], along with that platform's respective query
-/// params.
-async fn webhook_handler() -> impl IntoResponse {
-    StatusCode::NOT_IMPLEMENTED
+/// Accepts a `platform` query param indicating the supported [Platform], along
+/// with that platform's respective query params.
+///
+/// Accepts a [HookEvent] in `application/json` format. Valid events are
+/// forwarded to the specified platform. This feature is potentially
+/// temperamental; see [decode_payload].
+async fn webhook_handler(
+    State(deps): State<Deps>,
+    TypedHeader(content_type): TypedHeader<headers::ContentType>,
+    headers: HeaderMap,
+    extract::Query(platform): extract::Query<Platform>,
+    // We can't parse this at all yet as we need to compare signatures.
+    body_bytes: Bytes,
+) -> impl IntoResponse {
+    match &deps.heroku_secret {
+        None => StatusCode::PRECONDITION_FAILED,
+        Some(heroku_secret) => {
+            if content_type != headers::ContentType::json() {
+                return StatusCode::UNSUPPORTED_MEDIA_TYPE;
+            }
+
+            let validation = validate_request_signature(heroku_secret, &body_bytes, &headers).await;
+
+            match validation {
+                Err(e) => {
+                    let msg = match e {
+                        SecretError::Missing => "Heroku secret missing from webhook request",
+                        SecretError::Invalid => "Invalid Heroku secret in webhook request",
+                    };
+                    warn!(msg);
+
+                    StatusCode::UNAUTHORIZED
+                }
+                Ok(()) => {
+                    let decoded = serde_json::from_slice::<HookPayload>(&body_bytes);
+
+                    match decoded {
+                        Err(e) => {
+                            let msg =
+                                format!("Failed to deserialise Heroku webhook payload: {}", e);
+                            warn!(msg);
+
+                            StatusCode::UNPROCESSABLE_ENTITY
+                        }
+                        Ok(payload) => {
+                            let res = forward(&deps, &platform, &payload).await;
+
+                            match res {
+                                ForwardResult::Success | ForwardResult::IgnoredAction => {
+                                    StatusCode::OK
+                                }
+                                ForwardResult::UnsupportedEvent(evt) => {
+                                    info!(
+                                        "Could not decode webhook payload to a supported event, found: {}",
+                                        evt
+                                    );
+
+                                    StatusCode::OK
+                                }
+                                ForwardResult::Failure(_e) => StatusCode::INTERNAL_SERVER_ERROR,
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

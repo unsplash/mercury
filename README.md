@@ -2,18 +2,34 @@
 
 The guide of souls to the underworld [^1]. An alternative notification system to [Otto](https://github.com/unsplash/otto).
 
-## Usage
+## API
+
+Getting started with Mercury as a consumer.
+
+### Direct Messaging
 
 Mercury is designed for easy plug and play in CI, which typically "knows" when something is deployed, broken, etc.
 
 ```sh
-curl <HOST>/api/v1/slack -X POST \
+curl <MERCURY_HOST>/api/v1/slack -X POST \
     --oauth2-bearer <SLACK_TOKEN> \
     -d channel=playground \
     -d title=Mercury \
     -d desc="Running the example" \
     -d link="https://github.com/unsplash/mercury"
 ```
+
+The token will be validated against the `$SLACK_TOKEN` found on startup.
+
+### Heroku Webhooks
+
+Additionally Mercury supports monitoring Heroku webhooks for rollbacks and environment variable changes. The webhook must be created manually with the URL target pointed at Mercury.
+
+```console
+$ heroku webhooks:add -l notify -i api:release -a <HEROKU_APP> -s <HEROKU_SECRET> -u <MERCURY_HOST>/api/v1/heroku/hook?platform=slack&channel=playground
+```
+
+Webhooks will only successfully authenticate if the secret is the same on both sides. Mercury looks for the secret on startup at `$HEROKU_SECRET`. This feature, thus also this environment variable, is optional.
 
 ## Contributing
 
@@ -33,6 +49,10 @@ $ cargo test
 $ cargo fmt
 $ cargo clippy
 ```
+
+### Webhooks
+
+To develop against Heroku's webhooks Heroku will need some way of reaching your local machine. A Nix shell named `webhooks` is included for this purpose, containing the Heroku CLI and [ngrok](https://ngrok.com), the generated URL from which can be passed along to Heroku.
 
 ## Hosting
 

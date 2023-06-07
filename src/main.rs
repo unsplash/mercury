@@ -20,6 +20,10 @@ mod heroku;
 mod router;
 mod slack;
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 /// Application entrypoint. Initialises tracing, checks for environment
 /// variables, binds to 0.0.0.0, and starts the server.
 #[tokio::main]

@@ -17,6 +17,7 @@ use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 
 /// Dependencies shared by routes across requests.
+#[derive(Clone)]
 pub struct Deps {
     pub slack_client: Arc<Mutex<SlackClient>>,
     pub slack_token: SlackAccessToken,
@@ -30,8 +31,9 @@ pub fn new(deps: Deps) -> Router {
         .on_response(trace::DefaultOnResponse::new().level(Level::INFO));
 
     let v1 = Router::new()
-        .nest("/slack", slack_router(deps.slack_client, deps.slack_token))
+        .nest("/slack", slack_router(&deps.slack_token))
         .nest("/heroku", heroku_router())
+        .with_state(deps)
         .layer(trace_layer)
         // Exclude the health check route from tracing.
         .route("/health", get(|| async { StatusCode::OK }));
@@ -525,6 +527,332 @@ mod tests {
 
             assert_eq!(res2.status(), StatusCode::OK);
             assert!(plaintext_body(res2.into_body()).await.is_empty());
+        }
+    }
+
+    mod heroku {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_not_found() {
+            let req = Request::builder()
+                .uri("/api/v1/heroku/oops")
+                .body(Body::empty())
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::NOT_FOUND);
+        }
+
+        #[tokio::test]
+        async fn test_bad_method() {
+            let req = Request::builder()
+                .method("GET")
+                .uri("/api/v1/heroku/hook")
+                .header("Authorization", "Bearer foobar")
+                .body(Body::empty())
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        }
+
+        #[tokio::test]
+        async fn test_missing_content_type() {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .body(Body::empty())
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Header of type `content-type` was missing"
+            );
+        }
+
+        #[tokio::test]
+        async fn test_bad_content_type() {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Content-Type", "application/xml")
+                .body(Body::empty())
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_missing_query() {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook")
+                .header("Content-Type", "application/json")
+                .body(Body::empty())
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Failed to deserialize query string: missing field `platform`"
+            );
+        }
+
+        #[tokio::test]
+        async fn test_bad_query() {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=discord")
+                .header("Content-Type", "application/json")
+                .body(Body::empty())
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+            assert_eq!(
+                plaintext_body(res.into_body()).await,
+                "Failed to deserialize query string: unknown variant `discord`, expected `slack`"
+            );
+        }
+
+        #[tokio::test]
+        async fn test_missing_signature() {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Content-Type", "application/json")
+                .body(Body::from(r#"{ "any": true }"#))
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_bad_signature() {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Heroku-Webhook-Hmac-SHA256", "bad signature")
+                .header("Content-Type", "application/json")
+                .body(Body::from(r#"{ "any": true }"#))
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_bad_field() {
+            let payload = r#"{
+                "data": {
+                    "app": {
+                        "name": false
+                    },
+                    "description": "any"
+                }
+            }"#;
+            let sig = "tfahlLWwDM4yf8J6r1m+w/fQHMqG7EPNLeXephkimqg=";
+
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Heroku-Webhook-Hmac-SHA256", sig)
+                .header("Content-Type", "application/json")
+                .body(Body::from(payload))
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_unsupported_event() {
+            let payload = r#"{
+                "data": {
+                    "app": {
+                        "name": "any"
+                    },
+                    "description": "any"
+                },
+                "action": "update"
+            }"#;
+            let sig = "uZ1HWiOtMx9go0dKuGnGGLlEpJNZT/r0tLG9XM3ojG4=";
+
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Heroku-Webhook-Hmac-SHA256", sig)
+                .header("Content-Type", "application/json")
+                .body(Body::from(payload))
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::OK);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_ignored_action() {
+            let payload = r#"{
+                "data": {
+                    "app": {
+                        "name": "any"
+                    },
+                    "description": "any"
+                },
+                "action": "create"
+            }"#;
+            let sig = "JDWBStTUgQ1SK9JbyCgkAo9KrAcV6BHOZTc4R1IdPjc=";
+
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Heroku-Webhook-Hmac-SHA256", sig)
+                .header("Content-Type", "application/json")
+                .body(Body::from(payload))
+                .unwrap();
+
+            let res = router_().oneshot(req).await.unwrap();
+
+            assert_eq!(res.status(), StatusCode::OK);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_slack_failure() {
+            let payload = r#"{
+                "data": {
+                    "app": {
+                        "name": "any"
+                    },
+                    "description": "Rollback to v1234"
+                },
+                "action": "update"
+            }"#;
+            let sig = "pahzDFn5oWAMM2YMCycs+vFo9JTRIUmfsnuzgM9HXJM=";
+
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=foo")
+                .header("Heroku-Webhook-Hmac-SHA256", sig)
+                .header("Content-Type", "application/json")
+                .body(Body::from(payload))
+                .unwrap();
+
+            let list_res = r#"{
+                "ok": false,
+                "error": "invalid_auth"
+            }"#;
+
+            let mut srv = server().await;
+
+            let list_mock = srv
+                .mock("GET", "/conversations.list")
+                .match_query(Matcher::Any)
+                .with_body(list_res)
+                .create_async()
+                .await;
+
+            let res = router(
+                srv.url(),
+                SlackAccessToken("foobar".to_owned()),
+                Some(HerokuSecret("foobarbaz".to_owned())),
+            )
+            .oneshot(req)
+            .await
+            .unwrap();
+
+            list_mock.assert_async().await;
+
+            assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_slack_success() {
+            let payload = r#"{
+                "data": {
+                    "app": {
+                        "name": "any"
+                    },
+                    "description": "Rollback to v1234"
+                },
+                "action": "update"
+            }"#;
+            let sig = "pahzDFn5oWAMM2YMCycs+vFo9JTRIUmfsnuzgM9HXJM=";
+
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/heroku/hook?platform=slack&channel=channel-name")
+                .header("Heroku-Webhook-Hmac-SHA256", sig)
+                .header("Content-Type", "application/json")
+                .body(Body::from(payload))
+                .unwrap();
+
+            let list_res = r#"{
+                "ok": true,
+                "channels": [{
+                    "id": "channel-id",
+                    "name": "channel-name"
+                }],
+                "response_metadata": {
+                    "next_cursor": ""
+                }
+            }"#;
+
+            let msg_res = r#"{
+                "ok": true
+            }"#;
+
+            let mut srv = server().await;
+
+            let list_mock = srv
+                .mock("GET", "/conversations.list")
+                .match_query(Matcher::Any)
+                .with_body(list_res)
+                .create_async()
+                .await;
+
+            let msg_mock = srv
+                .mock("POST", "/chat.postMessage")
+                .with_body(msg_res)
+                .create_async()
+                .await;
+
+            let res = router(
+                srv.url(),
+                SlackAccessToken("foobar".to_owned()),
+                Some(HerokuSecret("foobarbaz".to_owned())),
+            )
+            .oneshot(req)
+            .await
+            .unwrap();
+
+            list_mock.assert_async().await;
+            msg_mock.assert_async().await;
+
+            assert_eq!(res.status(), StatusCode::OK);
+            assert!(plaintext_body(res.into_body()).await.is_empty());
         }
     }
 }

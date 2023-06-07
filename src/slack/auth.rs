@@ -1,6 +1,7 @@
 //! Helpers around Slack's use of OAuth Bearer Authentication.
 
 /// A newtype wrapper around Slack access tokens.
+#[derive(Clone)]
 pub struct SlackAccessToken(pub String);
 
 /// Convert a Slack access token to a `Bearer` `Authorization` header value.

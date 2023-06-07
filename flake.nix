@@ -7,7 +7,10 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfreePredicate = pkg: nixpkgs.lib.getName pkg == "ngrok";
+        };
 
         app = pkgs.rustPlatform.buildRustPackage {
           pname = "mercury";
@@ -37,6 +40,15 @@
             nativeBuildInputs = with pkgs; [
               clippy
               rustfmt
+            ];
+          };
+
+          webhooks = pkgs.mkShell {
+            inputsFrom = [ default ];
+
+            nativeBuildInputs = with pkgs; [
+              heroku
+              ngrok
             ];
           };
 
