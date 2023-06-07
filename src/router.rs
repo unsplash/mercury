@@ -7,8 +7,8 @@
 //! - POST: `/api/v1/heroku/hook`
 
 use crate::{
-    heroku::{auth::HerokuSecret, router::heroku_router},
-    slack::{api::SlackClient, auth::SlackAccessToken, router::slack_router},
+    heroku::{router::heroku_router, HerokuSecret},
+    slack::{router::slack_router, SlackAccessToken, SlackClient},
 };
 use axum::{http::StatusCode, routing::get, Router};
 use std::sync::Arc;

@@ -1,4 +1,4 @@
-//! Post a structured [Message][message::Message] to any Slack channel.
+//! Post a structured [Message] to any Slack channel.
 //!
 //! To get started and obtain an access token, create a Slack app with the
 //! following app manifest:
@@ -36,3 +36,9 @@ pub mod error;
 mod mention;
 pub mod message;
 pub mod router;
+
+pub use api::SlackClient;
+pub use auth::SlackAccessToken;
+pub use channel::ChannelName;
+pub use error::SlackError;
+pub use message::Message;

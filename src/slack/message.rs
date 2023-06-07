@@ -1,6 +1,6 @@
 //! Send structured messages to any given Slack channel.
 
-use super::{api::*, auth::SlackAccessToken, block::*, channel::*, error::SlackError, mention::*};
+use super::{api::*, block::*, channel::*, mention::*, SlackAccessToken, SlackError};
 use serde::{Deserialize, Serialize};
 use url::Url;
 

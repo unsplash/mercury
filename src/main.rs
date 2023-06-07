@@ -5,12 +5,9 @@
 //! The only communication mechanism currently supported is [Slack][slack].
 
 use dotenvy::dotenv;
-use heroku::auth::HerokuSecret;
+use heroku::HerokuSecret;
 use router::Deps;
-use slack::{
-    api::{SlackClient, API_BASE},
-    auth::SlackAccessToken,
-};
+use slack::{api::API_BASE, SlackAccessToken, SlackClient};
 use std::{env, net::SocketAddr, sync::Arc};
 use tokio::sync::{oneshot, Mutex};
 use tracing::{info, warn};

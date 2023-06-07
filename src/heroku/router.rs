@@ -4,7 +4,7 @@
 //!
 //! - POST: `/hook`
 
-use super::{auth::*, platform::Platform, webhook::*};
+use super::{auth::*, webhook::*, Platform};
 use crate::{router::Deps, slack::router::handle_slack_err};
 use axum::{
     extract::{self, State},

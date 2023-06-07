@@ -14,10 +14,10 @@
 //! `/api/v1/heroku/hook?platform=slack&channel=playground`. The message
 //! structure is fixed.
 
-use super::{dashboard::activity_page_url, platform::Platform};
+use super::{dashboard::activity_page_url, Platform};
 use crate::{
     router::Deps,
-    slack::{self, error::SlackError},
+    slack::{self, SlackError},
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -76,7 +76,7 @@ async fn send(
                 .lock()
                 .await
                 .post_message(
-                    &slack::message::Message {
+                    &slack::Message {
                         channel: x.channel.clone(),
                         title,
                         desc,

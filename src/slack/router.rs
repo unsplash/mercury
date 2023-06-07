@@ -6,7 +6,7 @@
 
 use crate::{
     router::Deps,
-    slack::{auth::SlackAccessToken, error::SlackError, message::Message},
+    slack::{Message, SlackAccessToken, SlackError},
 };
 use axum::{
     extract::{self, State},

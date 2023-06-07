@@ -1,7 +1,7 @@
 //! Interact with Slack channels, including the ability to programmatically
 //! join them.
 
-use super::{api::*, auth::SlackAccessToken, error::SlackError};
+use super::{api::*, SlackAccessToken, SlackError};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
 use std::{collections::HashMap, fmt};
