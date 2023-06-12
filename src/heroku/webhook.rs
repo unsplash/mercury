@@ -22,6 +22,7 @@ use crate::{
 use regex::Regex;
 use serde::Deserialize;
 
+/// The result of attempting to forward a valid webhook.
 pub enum ForwardResult {
     IgnoredAction,
     UnsupportedEvent(String),
@@ -29,6 +30,8 @@ pub enum ForwardResult {
     Success,
 }
 
+/// What went wreng during forwarding, specifically in communication with the
+/// onward platform.
 pub enum ForwardFailure {
     ToSlack(SlackError),
 }
