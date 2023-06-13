@@ -100,6 +100,7 @@ mod tests {
 
     mod slack {
         use super::*;
+        use std::time::Duration;
 
         #[tokio::test]
         async fn test_not_found() {
@@ -527,6 +528,139 @@ mod tests {
 
             assert_eq!(res2.status(), StatusCode::OK);
             assert!(plaintext_body(res2.into_body()).await.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_success_with_stale_cache() {
+            let fields = &[
+                ("channel".to_owned(), "channel-name".to_owned()),
+                ("title".to_owned(), "a title".to_owned()),
+                ("desc".to_owned(), "a description".to_owned()),
+            ];
+            let msg = serde_urlencoded::to_string(fields).unwrap();
+
+            let req1 = Request::builder()
+                .method("POST")
+                .uri("/api/v1/slack")
+                .header("Authorization", "Bearer foobar")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .body(Body::from(msg.clone()))
+                .unwrap();
+
+            let req2 = Request::builder()
+                .method("POST")
+                .uri("/api/v1/slack")
+                .header("Authorization", "Bearer foobar")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .body(Body::from(msg.clone()))
+                .unwrap();
+
+            let req3 = Request::builder()
+                .method("POST")
+                .uri("/api/v1/slack")
+                .header("Authorization", "Bearer foobar")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .body(Body::from(msg))
+                .unwrap();
+
+            let list1_res = r#"{
+                "ok": true,
+                "channels": [{
+                    "id": "old-channel-id",
+                    "name": "channel-name"
+                }],
+                "response_metadata": {
+                    "next_cursor": ""
+                }
+            }"#;
+
+            let list2_res = r#"{
+                "ok": true,
+                "channels": [{
+                    "id": "new-channel-id",
+                    "name": "channel-name"
+                }],
+                "response_metadata": {
+                    "next_cursor": ""
+                }
+            }"#;
+
+            let msg1_res = r#"{
+                "ok": true
+            }"#;
+
+            let msg2_res = r#"{
+                "ok": true
+            }"#;
+
+            let msg3_res = r#"{
+                "ok": true
+            }"#;
+
+            let mut srv = server().await;
+
+            let list1_mock = srv
+                .mock("GET", "/conversations.list")
+                .match_query(Matcher::Any)
+                .with_body(list1_res)
+                .create_async()
+                .await;
+
+            let msg1_mock = srv
+                .mock("POST", "/chat.postMessage")
+                .with_body(msg1_res)
+                .create_async()
+                .await;
+
+            let msg2_mock = srv
+                .mock("POST", "/chat.postMessage")
+                .with_body(msg2_res)
+                .create_async()
+                .await;
+
+            let list2_mock = srv
+                .mock("GET", "/conversations.list")
+                .match_query(Matcher::Any)
+                .with_body(list2_res)
+                .create_async()
+                .await;
+
+            let msg3_mock = srv
+                .mock("POST", "/chat.postMessage")
+                .with_body(msg3_res)
+                .create_async()
+                .await;
+
+            let mut rt = router(srv.url(), SlackAccessToken("foobar".to_owned()), None);
+
+            let res1 = rt.call(req1).await.unwrap();
+            list1_mock.assert_async().await;
+            msg1_mock.assert_async().await;
+
+            // We currently evict the cache after 24 hours. It should be
+            // considered safe from eviction at this stage (23 hours).
+            let nearly_one_day = Duration::from_secs(60 * 60 * 23);
+            mock_instant::MockClock::advance(nearly_one_day);
+
+            let res2 = rt.call(req2).await.unwrap();
+            msg2_mock.assert_async().await;
+
+            // This knocks us over the 24 hour limit (23 hours + 2 hours).
+            let over_the_edge = Duration::from_secs(60 * 60 * 2);
+            mock_instant::MockClock::advance(over_the_edge);
+
+            let res3 = rt.call(req3).await.unwrap();
+            list2_mock.assert_async().await;
+            msg3_mock.assert_async().await;
+
+            assert_eq!(res1.status(), StatusCode::OK);
+            assert!(plaintext_body(res1.into_body()).await.is_empty());
+
+            assert_eq!(res2.status(), StatusCode::OK);
+            assert!(plaintext_body(res2.into_body()).await.is_empty());
+
+            assert_eq!(res3.status(), StatusCode::OK);
+            assert!(plaintext_body(res3.into_body()).await.is_empty());
         }
     }
 

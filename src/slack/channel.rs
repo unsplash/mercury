@@ -4,8 +4,13 @@
 use super::{api::*, SlackAccessToken, SlackError};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, time::Duration};
 use tracing::info;
+
+#[cfg(test)]
+use mock_instant::Instant;
+#[cfg(not(test))]
+use std::time::Instant;
 
 /// Channel names as are visible in the Slack UI, with or without the leading
 /// hash.
@@ -129,16 +134,29 @@ struct PaginationMeta {
     next_cursor: Option<String>,
 }
 
+/// Predicate on whether the channel map cache should be evicted based upon the
+/// age of the cache, represented by `then`.
+///
+/// This is a fallible mitigation for the stale cache issue.
+fn should_evict_channel_map_cache(then: &Instant) -> bool {
+    then.elapsed() > Duration::from_secs(60 * 60 * 24)
+}
+
 impl SlackClient {
-    /// Get a map from channel names to channel IDs. The first successful result of
-    /// this function is cached, meaning that there's a risk of the map becoming
-    /// stale should channels be renamed.
+    /// Get a map from channel names to channel IDs. The first successful result
+    /// of this function is cached, meaning that there's a risk of the map
+    /// becoming stale should channels be renamed. The cache is evicted
+    /// periodically to mitigate this.
     async fn get_channel_map(
         &mut self,
         token: &SlackAccessToken,
     ) -> Result<ChannelMap, SlackError> {
-        match &self.channel_map {
-            Some(x) => Ok(x.to_owned()),
+        match self
+            .channel_map
+            .as_ref()
+            .filter(|(_, x)| !should_evict_channel_map_cache(x))
+        {
+            Some((x, _)) => Ok(x.to_owned()),
             None => {
                 let mut channels: Vec<ChannelMeta> = Vec::new();
                 let mut cursor: Option<String> = None;
@@ -170,7 +188,7 @@ impl SlackClient {
                                 .map(|meta| (meta.name, meta.id))
                                 .collect();
 
-                            self.channel_map = Some(map.to_owned());
+                            self.channel_map = Some((map.to_owned(), Instant::now()));
                             info!("{} channels cached", map.len());
 
                             break Ok(map);

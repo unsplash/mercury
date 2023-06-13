@@ -3,6 +3,11 @@
 use super::{auth::*, channel::ChannelMap};
 use serde::Deserialize;
 
+#[cfg(test)]
+use mock_instant::Instant;
+#[cfg(not(test))]
+use std::time::Instant;
+
 /// The base URL of the Slack API.
 pub const API_BASE: &str = "https://slack.com/api";
 
@@ -10,7 +15,7 @@ pub const API_BASE: &str = "https://slack.com/api";
 pub struct SlackClient {
     client: reqwest::Client,
     base_url: String,
-    pub(super) channel_map: Option<ChannelMap>,
+    pub(super) channel_map: Option<(ChannelMap, Instant)>,
 }
 
 impl SlackClient {
