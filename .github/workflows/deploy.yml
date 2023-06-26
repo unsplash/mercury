@@ -11,28 +11,28 @@ on:
     types: completed
 
 jobs:
-  deploy:
-    name: Deploy
-    if: github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v21
-      # Docker is preinstalled.
-      - run: nix build .#dockerImage && ./result | docker load
-      - run: |
-          echo ${{ secrets.FLY_AUTH_TOKEN }} | docker login -u x --password-stdin registry.fly.io/mercury-test
-          docker tag mercury registry.fly.io/mercury-test:latest
-          docker push registry.fly.io/mercury-test:latest
-      - run: nix develop .#ops -c flyctl deploy -t ${{ secrets.FLY_AUTH_TOKEN }}
-      # This (emphasis on `--fail-with-body`) acts as a sort of final E2E test.
-      - run: |
-          curl https://mercury-test.fly.dev/api/v1/slack --fail-with-body -X POST \
-            --oauth2-bearer '${{ secrets.MERCURY_SLACK_TOKEN }}' \
-            -d channel=playground \
-            -d title='🚀 Mercury' \
-            -d desc='A new deployment has succeeded.' \
-            -d link='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+  # deploy:
+  #   name: Deploy
+  #   if: github.event.workflow_run.conclusion == 'success'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: cachix/install-nix-action@v21
+  #     # Docker is preinstalled.
+  #     - run: nix build .#dockerImage && ./result | docker load
+  #     - run: |
+  #         echo ${{ secrets.FLY_AUTH_TOKEN }} | docker login -u x --password-stdin registry.fly.io/mercury-test
+  #         docker tag mercury registry.fly.io/mercury-test:latest
+  #         docker push registry.fly.io/mercury-test:latest
+  #     - run: nix develop .#ops -c flyctl deploy -t ${{ secrets.FLY_AUTH_TOKEN }}
+  #     # This (emphasis on `--fail-with-body`) acts as a sort of final E2E test.
+  #     - run: |
+  #         curl https://mercury-test.fly.dev/api/v1/slack --fail-with-body -X POST \
+  #           --oauth2-bearer '${{ secrets.MERCURY_SLACK_TOKEN }}' \
+  #           -d channel=playground \
+  #           -d title='🚀 Mercury' \
+  #           -d desc='A new deployment has succeeded.' \
+  #           -d link='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
   docs:
     name: Publish docs

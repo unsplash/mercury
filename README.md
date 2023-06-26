@@ -56,7 +56,7 @@ To develop against Heroku's webhooks Heroku will need some way of reaching your 
 
 ## Hosting
 
-Mercury is hosted on [Fly](https://fly.io) \*.
+Mercury is hosted on AWS\*.
 
 We can leverage Nix's reproducible builds to build a hermetic Docker image which can principally be deployed anywhere:
 
@@ -67,6 +67,6 @@ $ podman run -p 80 mercury
 
 The server runs on `$PORT`, defaulting to port 80.
 
-<sup>\* It's currently hosted on @samhh's personal Fly account, accessible at [mercury-test.fly.dev](https://mercury-test.fly.dev). This is temporary.</sup>
+<sup>It's currently hosted on a staging cluster which is deployed to manually, accessible at [mercury-staging.proxy.unsplash.com](https://mercury-staging.proxy.unsplash.com). This is temporary.</sup>
 
 [^1]: https://en.wikipedia.org/wiki/Mercury_(mythology)
