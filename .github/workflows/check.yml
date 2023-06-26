@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
       - run: nix flake check
 
   check:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
       - run: nix develop -c cargo check
 
   test:
@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
       - run: nix develop -c cargo test
 
   lint:
@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
       # See: https://github.com/rust-lang/rust-clippy/issues/1209
       - run: RUSTFLAGS="-D warnings" nix develop -c cargo clippy --all-targets
 
@@ -53,5 +53,5 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
       - run: nix develop -c cargo fmt --check
