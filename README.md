@@ -11,7 +11,7 @@ Getting started with Mercury as a consumer.
 Mercury is designed for easy plug and play in CI, which typically "knows" when something is deployed, broken, etc.
 
 ```sh
-curl <MERCURY_HOST>/api/v1/slack -X POST \
+curl https://mercury.proxy.unsplash.com/api/v1/slack -X POST \
     --oauth2-bearer <SLACK_TOKEN> \
     -d channel=playground \
     -d title=Mercury \
@@ -26,7 +26,7 @@ The token will be validated against the `$SLACK_TOKEN` found on startup.
 Additionally Mercury supports monitoring Heroku webhooks for rollbacks and environment variable changes. The webhook must be created manually with the URL target pointed at Mercury.
 
 ```console
-$ heroku webhooks:add -l notify -i api:release -a <HEROKU_APP> -s <HEROKU_SECRET> -u <MERCURY_HOST>/api/v1/heroku/hook?platform=slack&channel=playground
+$ heroku webhooks:add -l notify -i api:release -a <HEROKU_APP> -s <HEROKU_SECRET> -u https://mercury.proxy.unsplash.com/api/v1/heroku/hook?platform=slack&channel=playground
 ```
 
 Webhooks will only successfully authenticate if the secret is the same on both sides. Mercury looks for the secret on startup at `$HEROKU_SECRET`. This feature, thus also this environment variable, is optional.
@@ -56,9 +56,9 @@ To develop against Heroku's webhooks Heroku will need some way of reaching your 
 
 ## Hosting
 
-Mercury is hosted on AWS\*.
+Mercury is hosted on AWS. Infrastructure is defined in [api-ops](https://github.com/unsplash/api-ops).
 
-We can leverage Nix's reproducible builds to build a hermetic Docker image which can principally be deployed anywhere:
+We leverage Nix's reproducible builds to build a hermetic Docker image which can principally be deployed anywhere:
 
 ```console
 $ nix build ".#dockerImage" && ./result | podman load
@@ -66,7 +66,5 @@ $ podman run -p 80 mercury
 ```
 
 The server runs on `$PORT`, defaulting to port 80.
-
-<sup>It's currently hosted on a staging cluster which is deployed to manually, accessible at [mercury-staging.proxy.unsplash.com](https://mercury-staging.proxy.unsplash.com). This is temporary.</sup>
 
 [^1]: https://en.wikipedia.org/wiki/Mercury_(mythology)

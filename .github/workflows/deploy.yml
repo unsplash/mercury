@@ -11,28 +11,57 @@ on:
     types: completed
 
 jobs:
-  # deploy:
-  #   name: Deploy
-  #   if: github.event.workflow_run.conclusion == 'success'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: cachix/install-nix-action@v22
-  #     # Docker is preinstalled.
-  #     - run: nix build .#dockerImage && ./result | docker load
-  #     - run: |
-  #         echo ${{ secrets.FLY_AUTH_TOKEN }} | docker login -u x --password-stdin registry.fly.io/mercury-test
-  #         docker tag mercury registry.fly.io/mercury-test:latest
-  #         docker push registry.fly.io/mercury-test:latest
-  #     - run: nix develop .#ops -c flyctl deploy -t ${{ secrets.FLY_AUTH_TOKEN }}
-  #     # This (emphasis on `--fail-with-body`) acts as a sort of final E2E test.
-  #     - run: |
-  #         curl https://mercury-test.fly.dev/api/v1/slack --fail-with-body -X POST \
-  #           --oauth2-bearer '${{ secrets.MERCURY_SLACK_TOKEN }}' \
-  #           -d channel=playground \
-  #           -d title='🚀 Mercury' \
-  #           -d desc='A new deployment has succeeded.' \
-  #           -d link='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+  deploy:
+    name: Deploy
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: us-west-2
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+
+      - name: Build
+        # Docker is preinstalled.
+        run: nix build .#dockerImage && ./result | docker load
+
+      - name: Push
+        run: |
+          nix develop .#ops -c \
+            aws ecr get-login-password | docker login -u AWS --password-stdin "$REPO"
+          docker tag mercury "$REPO":latest
+          docker push "$REPO":latest
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PUSHER }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PUSHER }}
+          REPO: 060568373025.dkr.ecr.us-west-2.amazonaws.com/mercury
+
+      - name: Deploy
+        run: |
+          # Force a new deployment, implicitly utilising the new image on the
+          # same `latest` image tag.
+          nix develop .#ops -c \
+            aws ecs update-service --no-cli-pager \
+              --cluster shared-cluster-staging \
+              --service mercury-service \
+              --force-new-deployment
+          nix develop .#ops -c \
+            aws ecs wait services-stable \
+              --cluster shared-cluster-staging \
+              --services mercury-service
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEPLOYER }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEPLOYER }}
+
+      # This (emphasis on `--fail-with-body`) acts as a sort of final E2E test.
+      - name: Notify (Test)
+        run: |
+          curl https://mercury.proxy.unsplash.com/api/v1/slack --fail-with-body -X POST \
+            --oauth2-bearer '${{ secrets.MERCURY_SLACK_TOKEN }}' \
+            -d channel=playground \
+            -d title='🚀 Mercury' \
+            -d desc='A new deployment has succeeded.' \
+            -d link='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
   docs:
     name: Publish docs
