@@ -29,8 +29,9 @@ jobs:
         run: |
           nix develop .#ops -c \
             aws ecr get-login-password | docker login -u AWS --password-stdin "$REPO"
+          docker tag mercury "$REPO":${{ github.sha }}
           docker tag mercury "$REPO":latest
-          docker push "$REPO":latest
+          docker push --all-tags "$REPO"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PUSHER }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PUSHER }}
