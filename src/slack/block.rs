@@ -9,8 +9,9 @@
 //! Considering the alternative, "attachments", are deprecated, we'll make do
 //! with some basic blocks, utilising context blocks for smaller copy.
 //!
-//! [blocks-api]: https://api.slack.com/reference/block-kit/blocks
-//! [button-webhook]: https://stackoverflow.com/questions/64107123/can-you-use-slack-buttons-non-interactively
+//! [^blocks-api]: <https://api.slack.com/reference/block-kit/blocks>
+//!
+//! [^button-webhook]: <https://stackoverflow.com/questions/64107123/can-you-use-slack-buttons-non-interactively>
 
 use serde::ser::SerializeStruct;
 use serde::{ser, Serialize};
