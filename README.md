@@ -16,7 +16,7 @@ curl https://mercury.proxy.unsplash.com/api/v1/slack -X POST \
     -d channel=playground \
     -d title=Mercury \
     -d desc="Running the example" \
-    -d link="https://github.com/unsplash/mercury"
+    --data-urlencode link="https://github.com/unsplash/mercury?beware=url&encoding=!"
 ```
 
 The token will be validated against the `$SLACK_TOKEN` found on startup.
