@@ -27,6 +27,7 @@ extern crate quickcheck;
 async fn main() {
     tracing_subscriber::fmt()
         .with_target(false)
+        .with_ansi(print_in_color())
         .compact()
         .init();
 
@@ -78,6 +79,35 @@ async fn server(addr: SocketAddr, slack_token: SlackAccessToken, rx: oneshot::Re
         })
         .await
         .expect("Failed to start server");
+}
+
+/// We want pretty output in dev, however we don't want ANSI escape sequences in
+/// our production logs. Until tracing-subscriber handles this for us somehow,
+/// we'll check `TERM` and implement the `NO_COLOR` standard.
+///
+/// This implementation is borrowed from the `termcolor` crate, which is used by
+/// the likes of ripgrep.
+///
+/// See:
+///   - <https://no-color.org>
+///   - <https://github.com/tokio-rs/tracing/issues/2388>
+///   - <https://github.com/tokio-rs/tracing/issues/2214#issuecomment-1191729530>
+///   - <https://github.com/BurntSushi/termcolor/blob/fb5fb8bb62b0cf8a9623da557d2a4ed6a27b8c9f/src/lib.rs#L256>
+fn print_in_color() -> bool {
+    match env::var_os("TERM") {
+        None => return false,
+        Some(k) => {
+            if k == "dumb" {
+                return false;
+            }
+        }
+    }
+
+    if env::var_os("NO_COLOR").is_some() {
+        return false;
+    }
+
+    true
 }
 
 #[cfg(test)]
