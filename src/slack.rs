@@ -17,6 +17,7 @@
 //!       - channels:read
 //!       - channels:join
 //!       - chat:write
+//!       - chat:write.customize
 //! ```
 //!
 //! The permission scopes serve the following purposes:
@@ -24,6 +25,8 @@
 //! - `channels:read`: Map channel names to channel IDs.
 //! - `channels:join`: Join channels automatically.
 //! - `chat:write`: Send messages to channels.
+//! - `chat:write.customize`: Terser messages utilising the username, and custom
+//! avatars.
 //!
 //! `channels:join` is optional if you manually add the bot to the channels
 //! you'd like to post to.

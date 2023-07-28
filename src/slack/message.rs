@@ -21,6 +21,7 @@ pub struct Message {
 #[derive(Serialize)]
 struct MessageRequest<'a> {
     channel: &'a ChannelId,
+    username: String,
     blocks: Vec<Block>,
 }
 
@@ -69,6 +70,7 @@ impl SlackClient {
             .post("/chat.postMessage", token)
             .json(&MessageRequest {
                 channel: channel_id,
+                username: msg.title.to_owned(),
                 blocks: build_blocks(msg),
             })
             .send()
@@ -97,7 +99,7 @@ fn is_not_in_channel(res: &SlackError) -> bool {
 fn build_blocks(msg: &Message) -> Vec<Block> {
     let mut xs = Vec::with_capacity(3);
 
-    xs.push(Block::Plaintext(format!("{}: {}", msg.title, msg.desc)));
+    xs.push(Block::Plaintext(msg.desc.to_owned()));
 
     if let Some(cc) = &msg.cc {
         xs.push(Block::Mrkdown(fmt_mention(cc)));
