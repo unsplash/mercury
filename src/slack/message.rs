@@ -25,6 +25,8 @@ struct MessageRequest<'a> {
     username: String,
     blocks: Vec<Block>,
     icon_url: Option<Url>,
+    // Used for notifications in the presence of `blocks`.
+    text: String,
 }
 
 /// <https://api.slack.com/methods/chat.postMessage#examples>
@@ -75,6 +77,7 @@ impl SlackClient {
                 username: msg.title.to_owned(),
                 blocks: build_blocks(msg),
                 icon_url: msg.avatar.to_owned(),
+                text: build_notif_text(msg),
             })
             .send()
             .await?
@@ -115,6 +118,10 @@ fn build_blocks(msg: &Message) -> Vec<Block> {
     }
 
     xs
+}
+
+fn build_notif_text(msg: &Message) -> String {
+    format!("{}: {}", msg.title, msg.desc)
 }
 
 /// Format a [Mention] to the syntax Slack expects, and stylise it.
