@@ -3,6 +3,7 @@
 //!
 //! It has some limitations however:
 //! - It doesn't allow one to mix rich text and plaintext in a single "section".
+//!   - `rich_text` et al are unsupported as inputs to the API.
 //! - Accessory buttons insist upon on onward webhook URL [^button-webhook].
 //! - The messages tend towards being very large.
 //!
