@@ -85,6 +85,7 @@ async fn send(
                         desc,
                         link: Some(activity_page_url(app_name)),
                         cc: None,
+                        avatar: None,
                     },
                     &deps.slack_token,
                 )

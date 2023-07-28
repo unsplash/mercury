@@ -15,6 +15,7 @@ pub struct Message {
     pub desc: String,
     pub link: Option<Url>,
     pub cc: Option<Mention>,
+    pub avatar: Option<Url>,
 }
 
 /// <https://api.slack.com/methods/chat.postMessage#args>
@@ -23,6 +24,7 @@ struct MessageRequest<'a> {
     channel: &'a ChannelId,
     username: String,
     blocks: Vec<Block>,
+    icon_url: Option<Url>,
 }
 
 /// <https://api.slack.com/methods/chat.postMessage#examples>
@@ -72,6 +74,7 @@ impl SlackClient {
                 channel: channel_id,
                 username: msg.title.to_owned(),
                 blocks: build_blocks(msg),
+                icon_url: msg.avatar.to_owned(),
             })
             .send()
             .await?
