@@ -1,12 +1,11 @@
-//! Support a limited set of webhook events, forwarding them onto a given
-//! messaging [Platform].
+//! Support a limited set of [webhook events](HookEvent), forwarding them onto a
+//! given messaging [Platform].
 //!
 //! Requests are validated by a secret. See [super::auth].
 //!
 //! Webhooks must be created externally, supplying Mercury's
 //! `/api/v1/heroku/hook` endpoint as the target URL. The `platform` query param
 //! determines where messages are sent, along with platform-specific metadata.
-//! The webhook entity with the relevant events is `api:release`.
 //!
 //! Currently the only supported platform is [Slack][slack], which takes
 //! an additional `channel` query param (as per
@@ -25,7 +24,9 @@ use serde::Deserialize;
 /// Supported Heroku webhook events.
 #[derive(Debug, PartialEq, Eq)]
 pub enum HookEvent {
+    /// From the entity `api:release`.
     Rollback(String),
+    /// From the entity `api:release`.
     EnvVarsChange(String),
 }
 
