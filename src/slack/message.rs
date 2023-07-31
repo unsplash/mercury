@@ -105,16 +105,16 @@ fn is_not_in_channel(res: &SlackError) -> bool {
 fn build_blocks(msg: &Message) -> Vec<Block> {
     let mut xs = Vec::with_capacity(3);
 
-    xs.push(Block::Plaintext(msg.desc.to_owned()));
+    xs.push(Block::Text(TextBlock::Plaintext(msg.desc.to_owned())));
 
     if let Some(cc) = &msg.cc {
-        xs.push(Block::Mrkdown(fmt_mention(cc)));
+        xs.push(Block::Text(TextBlock::Mrkdwn(fmt_mention(cc))));
     }
 
     if let Some(link) = &msg.link {
         // We shouldn't be able to both parse and print something as a `Url` and
         // also achieve mrkdwn formatting.
-        xs.push(Block::Context(fmt_link(link)));
+        xs.push(Block::Context(vec![TextBlock::Mrkdwn(fmt_link(link))]));
     }
 
     xs

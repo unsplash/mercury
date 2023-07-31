@@ -20,20 +20,21 @@ use serde::{ser, Serialize};
 /// A simplified representation of Slack's "blocks", supporting only the bare
 /// minimum we need to achieve our desired outcome.
 pub enum Block {
-    /// Plaintext, safe for foreign input.
-    Plaintext(String),
-    /// Slack's take on markdown, unsafe for foreign input.
-    Mrkdown(String),
-    /// Small copy, accepting either plaintext or mrkdwn content.
-    Context(String),
+    Text(TextBlock),
+    /// Small copy, accepting either plaintext or mrkdwn content. The items are
+    /// rendered compactly together.
+    Context(Vec<TextBlock>),
 }
 
-/// A recurring object type in blocks, simplifying serialisation.
 #[derive(Serialize)]
-struct TextObj<'a> {
-    #[serde(rename = "type")]
-    typ: &'static str,
-    text: &'a String,
+#[serde(tag = "type", content = "text")]
+pub enum TextBlock {
+    /// Plaintext, safe for foreign input.
+    #[serde(rename = "plain_text")]
+    Plaintext(String),
+    /// Slack's take on markdown, unsafe for foreign input.
+    #[serde(rename = "mrkdwn")]
+    Mrkdwn(String),
 }
 
 impl ser::Serialize for Block {
@@ -44,34 +45,13 @@ impl ser::Serialize for Block {
         let mut state = serializer.serialize_struct("Block", 2)?;
 
         match self {
-            Block::Plaintext(x) => {
+            Block::Text(x) => {
                 state.serialize_field("type", "section")?;
-
-                let inner = TextObj {
-                    typ: "plain_text",
-                    text: x,
-                };
-                state.serialize_field("text", &inner)?;
+                state.serialize_field("text", x)?;
             }
-
-            Block::Mrkdown(x) => {
-                state.serialize_field("type", "section")?;
-
-                let inner = TextObj {
-                    typ: "mrkdwn",
-                    text: x,
-                };
-                state.serialize_field("text", &inner)?;
-            }
-
-            Block::Context(x) => {
+            Block::Context(xs) => {
                 state.serialize_field("type", "context")?;
-
-                let inner = TextObj {
-                    typ: "mrkdwn",
-                    text: x,
-                };
-                state.serialize_field("elements", &vec![inner])?;
+                state.serialize_field("elements", xs)?;
             }
         };
 
