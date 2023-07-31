@@ -20,15 +20,15 @@ use serde::{ser, Serialize};
 /// A simplified representation of Slack's "blocks", supporting only the bare
 /// minimum we need to achieve our desired outcome.
 pub enum Block {
-    Text(TextBlock),
-    /// Small copy, accepting either plaintext or mrkdwn content. The items are
-    /// rendered compactly together.
-    Context(Vec<TextBlock>),
+    /// Ordinary, standalone copy.
+    Section(TextObject),
+    /// Small copy. The items are rendered compactly together.
+    Context(Vec<TextObject>),
 }
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "text")]
-pub enum TextBlock {
+pub enum TextObject {
     /// Plaintext, safe for foreign input.
     #[serde(rename = "plain_text")]
     Plaintext(String),
@@ -45,7 +45,7 @@ impl ser::Serialize for Block {
         let mut state = serializer.serialize_struct("Block", 2)?;
 
         match self {
-            Block::Text(x) => {
+            Block::Section(x) => {
                 state.serialize_field("type", "section")?;
                 state.serialize_field("text", x)?;
             }
