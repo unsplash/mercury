@@ -105,19 +105,19 @@ fn is_not_in_channel(res: &SlackError) -> bool {
 fn build_blocks(msg: &Message) -> Vec<Block> {
     let mut xs = Vec::with_capacity(3);
 
-    xs.push(Block::Section(TextObject::Plaintext(msg.desc.to_owned())));
-
-    if let Some(cc) = &msg.cc {
-        xs.push(Block::Section(TextObject::Mrkdwn(fmt_mention(cc))));
-    }
+    xs.push(TextObject::Plaintext(msg.desc.to_owned()));
 
     if let Some(link) = &msg.link {
         // We shouldn't be able to both parse and print something as a `Url` and
         // also achieve mrkdwn formatting.
-        xs.push(Block::Context(vec![TextObject::Mrkdwn(fmt_link(link))]));
+        xs.push(TextObject::Mrkdwn(fmt_link(link)));
     }
 
-    xs
+    if let Some(cc) = &msg.cc {
+        xs.push(TextObject::Mrkdwn(fmt_mention(cc)));
+    }
+
+    vec![Block::Context(xs)]
 }
 
 fn build_notif_text(msg: &Message) -> String {
@@ -138,52 +138,7 @@ fn fmt_mention(m: &Mention) -> String {
 ///     format!("<{}|unsplash.com/it>", url)
 /// );
 /// ```
+/// Format a [Url] to Slack mrkdwn syntax, expressed as an emoji.
 fn fmt_link(u: &Url) -> String {
-    let href = u.to_string();
-
-    // Formats most links to a prettier format, falling back to the href.
-    if let Some(host) = u.host_str() {
-        let host_sans_www = host.trim_start_matches("www.");
-
-        let path = u.path();
-        let path_or_empty = if path == "/" { "" } else { path };
-        format!("<{}|{}{}>", href, host_sans_www, path_or_empty)
-    } else {
-        href
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Url;
-
-    #[test]
-    fn test_fmt_link() {
-        use super::fmt_link;
-
-        let pretty_raw = "https://images.unsplash.com/path/to/photo.jpg?size=large";
-        let pretty = Url::parse(pretty_raw).unwrap();
-        assert_eq!(
-            fmt_link(&pretty),
-            format!("<{}|images.unsplash.com/path/to/photo.jpg>", pretty_raw)
-        );
-
-        let pretty_www_raw = "https://www.unsplash.com/path/to/photo.jpg?size=large";
-        let pretty_www = Url::parse(pretty_www_raw).unwrap();
-        assert_eq!(
-            fmt_link(&pretty_www),
-            format!("<{}|unsplash.com/path/to/photo.jpg>", pretty_www_raw)
-        );
-
-        let pretty_no_path_raw = "https://unsplash.com/";
-        let pretty_no_path = Url::parse(pretty_no_path_raw).unwrap();
-        assert_eq!(
-            fmt_link(&pretty_no_path),
-            format!("<{}|unsplash.com>", pretty_no_path_raw)
-        );
-
-        let ugly_raw = "data:text/plain,Hello?World#";
-        let ugly = Url::parse(ugly_raw).unwrap();
-        assert_eq!(fmt_link(&ugly), ugly_raw);
-    }
+    format!("<{}|{}>", u, "↗")
 }

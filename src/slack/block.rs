@@ -19,6 +19,7 @@ use serde::{ser, Serialize};
 
 /// A simplified representation of Slack's "blocks", supporting only the bare
 /// minimum we need to achieve our desired outcome.
+#[allow(dead_code)]
 pub enum Block {
     /// Ordinary, standalone copy.
     Section(TextObject),
