@@ -26,17 +26,6 @@ pub enum Block {
     Context(Vec<TextObject>),
 }
 
-#[derive(Serialize)]
-#[serde(tag = "type", content = "text")]
-pub enum TextObject {
-    /// Plaintext, safe for foreign input.
-    #[serde(rename = "plain_text")]
-    Plaintext(String),
-    /// Slack's take on markdown, unsafe for foreign input.
-    #[serde(rename = "mrkdwn")]
-    Mrkdwn(String),
-}
-
 impl ser::Serialize for Block {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -57,4 +46,15 @@ impl ser::Serialize for Block {
 
         state.end()
     }
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type", content = "text")]
+pub enum TextObject {
+    /// Plaintext, safe for foreign input.
+    #[serde(rename = "plain_text")]
+    Plaintext(String),
+    /// Slack's take on markdown, unsafe for foreign input.
+    #[serde(rename = "mrkdwn")]
+    Mrkdwn(String),
 }
