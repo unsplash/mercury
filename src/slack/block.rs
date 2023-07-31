@@ -20,11 +20,11 @@ use serde::{ser, Serialize};
 /// A simplified representation of Slack's "blocks", supporting only the bare
 /// minimum we need to achieve our desired outcome.
 pub enum Block {
-    // Plaintext, safe for foreign input.
+    /// Plaintext, safe for foreign input.
     Plaintext(String),
-    // Slack's take on markdown, unsafe for foreign input.
+    /// Slack's take on markdown, unsafe for foreign input.
     Mrkdown(String),
-    // Small copy, accepting either plaintext or mrkdwn content.
+    /// Small copy, accepting either plaintext or mrkdwn content.
     Context(String),
 }
 
