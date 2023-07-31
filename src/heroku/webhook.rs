@@ -22,6 +22,13 @@ use crate::{
 use regex::Regex;
 use serde::Deserialize;
 
+/// Supported Heroku webhook events.
+#[derive(Debug, PartialEq, Eq)]
+pub enum HookEvent {
+    Rollback(String),
+    EnvVarsChange(String),
+}
+
 /// The result of attempting to forward a valid webhook.
 pub enum ForwardResult {
     IgnoredAction,
@@ -97,13 +104,6 @@ async fn send(
             }
         }
     }
-}
-
-/// Supported Heroku webhook events.
-#[derive(Debug, PartialEq, Eq)]
-pub enum HookEvent {
-    Rollback(String),
-    EnvVarsChange(String),
 }
 
 /// Attempt to decode a valid webhook payload into a supported [HookEvent].
