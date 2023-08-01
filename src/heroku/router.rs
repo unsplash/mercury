@@ -30,7 +30,7 @@ pub fn heroku_router() -> Router<Deps> {
 /// Accepts a `platform` query param indicating the supported [Platform], along
 /// with that platform's respective query params.
 ///
-/// Accepts a [HookEvent] in `application/json` format. Valid events are
+/// Accepts a [HookPayload] in `application/json` format. Valid events are
 /// forwarded to the specified platform. This feature is potentially
 /// temperamental; see [decode_payload].
 async fn webhook_handler(
