@@ -747,7 +747,7 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn test_bad_query() {
+        async fn test_bad_platform() {
             let req = Request::builder()
                 .method("POST")
                 .uri("/api/v1/heroku/hook?platform=discord")
