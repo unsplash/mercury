@@ -38,7 +38,7 @@ pub enum ForwardResult {
     Success,
 }
 
-/// What went wreng during forwarding, specifically in communication with the
+/// What went wrong during forwarding, specifically in communication with the
 /// onward platform.
 pub enum ForwardFailure {
     ToSlack(SlackError),
