@@ -798,6 +798,7 @@ mod tests {
         #[tokio::test]
         async fn test_bad_field() {
             let payload = r#"{
+                "resource": "release",
                 "data": {
                     "app": {
                         "name": false
@@ -805,7 +806,7 @@ mod tests {
                     "description": "any"
                 }
             }"#;
-            let sig = "tfahlLWwDM4yf8J6r1m+w/fQHMqG7EPNLeXephkimqg=";
+            let sig = "WVN5qPUl+QWmSYErNMSXhHAYiIZ/hwCsaiZNjESj7Xs=";
 
             let req = Request::builder()
                 .method("POST")
@@ -820,13 +821,14 @@ mod tests {
             assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
             assert_eq!(
                 plaintext_body(res.into_body()).await,
-                "Failed to deserialize payload: invalid type: boolean `false`, expected a string at line 4 column 37"
+                "Failed to deserialize payload: invalid type: boolean `false`, expected a string"
             );
         }
 
         #[tokio::test]
         async fn test_unsupported_event() {
             let payload = r#"{
+                "resource": "release",
                 "data": {
                     "app": {
                         "name": "any"
@@ -835,7 +837,7 @@ mod tests {
                 },
                 "action": "update"
             }"#;
-            let sig = "uZ1HWiOtMx9go0dKuGnGGLlEpJNZT/r0tLG9XM3ojG4=";
+            let sig = "IsNt6nWoGu9tBYt1fKKi3SjiLhMp6Fk/TYsFCehd6LM=";
 
             let req = Request::builder()
                 .method("POST")
@@ -854,6 +856,7 @@ mod tests {
         #[tokio::test]
         async fn test_ignored_action() {
             let payload = r#"{
+                "resource": "release",
                 "data": {
                     "app": {
                         "name": "any"
@@ -862,7 +865,7 @@ mod tests {
                 },
                 "action": "create"
             }"#;
-            let sig = "JDWBStTUgQ1SK9JbyCgkAo9KrAcV6BHOZTc4R1IdPjc=";
+            let sig = "WKv86Cw9YFrEpu8vkCw21QfsQ7FT0f8502q1F9EEQ6c=";
 
             let req = Request::builder()
                 .method("POST")
@@ -881,6 +884,7 @@ mod tests {
         #[tokio::test]
         async fn test_slack_failure_auth() {
             let payload = r#"{
+                "resource": "release",
                 "data": {
                     "app": {
                         "name": "any"
@@ -889,7 +893,7 @@ mod tests {
                 },
                 "action": "update"
             }"#;
-            let sig = "pahzDFn5oWAMM2YMCycs+vFo9JTRIUmfsnuzgM9HXJM=";
+            let sig = "mMGRnv4/Wjm2kyEbI0vqR//Kmt8NaV3Rj9xiMBdvlUU=";
 
             let req = Request::builder()
                 .method("POST")
@@ -934,6 +938,7 @@ mod tests {
         #[tokio::test]
         async fn test_slack_failure_unknown() {
             let payload = r#"{
+                "resource": "release",
                 "data": {
                     "app": {
                         "name": "any"
@@ -942,7 +947,7 @@ mod tests {
                 },
                 "action": "update"
             }"#;
-            let sig = "pahzDFn5oWAMM2YMCycs+vFo9JTRIUmfsnuzgM9HXJM=";
+            let sig = "mMGRnv4/Wjm2kyEbI0vqR//Kmt8NaV3Rj9xiMBdvlUU=";
 
             let req = Request::builder()
                 .method("POST")
@@ -987,6 +992,7 @@ mod tests {
         #[tokio::test]
         async fn test_slack_success() {
             let payload = r#"{
+                "resource": "release",
                 "data": {
                     "app": {
                         "name": "any"
@@ -995,7 +1001,7 @@ mod tests {
                 },
                 "action": "update"
             }"#;
-            let sig = "pahzDFn5oWAMM2YMCycs+vFo9JTRIUmfsnuzgM9HXJM=";
+            let sig = "mMGRnv4/Wjm2kyEbI0vqR//Kmt8NaV3Rj9xiMBdvlUU=";
 
             let req = Request::builder()
                 .method("POST")
