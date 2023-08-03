@@ -55,7 +55,7 @@ pub async fn forward(deps: &Deps, plat: &Platform, payload: &HookPayload) -> For
             // ignore anything other than the hopefully lone
             // update action.
             ReleaseHookAction::Other => ForwardResult::IgnoredAction,
-            ReleaseHookAction::Update => match decode_payload(x) {
+            ReleaseHookAction::Update => match decode_release_payload(x) {
                 Err(desc) => ForwardResult::UnsupportedEvent(desc),
                 Ok(evt) => send(deps, plat, &evt, payload).await,
             },
@@ -117,7 +117,7 @@ async fn send(
 /// Returns the description that failed decoding upon failure.
 ///
 /// There's no indication that these description are stable on Heroku's side.
-pub fn decode_payload(payload: &ReleaseHookPayload) -> Result<HookEvent, String> {
+pub fn decode_release_payload(payload: &ReleaseHookPayload) -> Result<HookEvent, String> {
     decode_rollback(payload)
         .or_else(|| decode_env_vars_change(payload))
         .ok_or_else(|| payload.data.description.clone())
@@ -305,21 +305,21 @@ mod tests {
         #[test]
         fn test_rollback() {
             assert_eq!(
-                decode_payload(&payload_from_desc("Rollback to v1234")),
+                decode_release_payload(&payload_from_desc("Rollback to v1234")),
                 Ok(HookEvent::Rollback {
                     version: "v1234".to_string()
                 }),
             );
 
             assert_eq!(
-                decode_payload(&payload_from_desc("Rollback to some new format")),
+                decode_release_payload(&payload_from_desc("Rollback to some new format")),
                 Ok(HookEvent::Rollback {
                     version: "some new format".to_string()
                 }),
             );
 
             assert_eq!(
-                decode_payload(&payload_from_desc("rolled back to v1234")),
+                decode_release_payload(&payload_from_desc("rolled back to v1234")),
                 Err("rolled back to v1234".to_string()),
             );
         }
@@ -327,21 +327,21 @@ mod tests {
         #[test]
         fn test_env_vars_change() {
             assert_eq!(
-                decode_payload(&payload_from_desc("Set FOO, BAR config vars")),
+                decode_release_payload(&payload_from_desc("Set FOO, BAR config vars")),
                 Ok(HookEvent::EnvVarsChange {
                     raw_change: "Set FOO, BAR".to_string()
                 }),
             );
 
             assert_eq!(
-                decode_payload(&payload_from_desc("Some new format config vars")),
+                decode_release_payload(&payload_from_desc("Some new format config vars")),
                 Ok(HookEvent::EnvVarsChange {
                     raw_change: "Some new format".to_string()
                 }),
             );
 
             assert_eq!(
-                decode_payload(&payload_from_desc("Config vars changed")),
+                decode_release_payload(&payload_from_desc("Config vars changed")),
                 Err("Config vars changed".to_string()),
             );
         }
