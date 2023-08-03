@@ -1,4 +1,5 @@
-//! Receive webhooks for rollbacks and environment variable changes from Heroku.
+//! Receive webhooks for dyno crashes, rollbacks, and environment variable
+//! changes from Heroku.
 
 pub mod auth;
 mod dashboard;
