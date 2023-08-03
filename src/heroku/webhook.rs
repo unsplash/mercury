@@ -27,9 +27,9 @@ use serde::Deserialize;
 #[derive(Debug, PartialEq, Eq)]
 pub enum HookEvent {
     /// From the entity `api:release`.
-    Rollback(String),
+    Rollback { version: String },
     /// From the entity `api:release`.
-    EnvVarsChange(String),
+    EnvVarsChange { raw_change: String },
 }
 
 /// The result of attempting to forward a valid webhook.
@@ -75,13 +75,15 @@ async fn send(
     };
 
     let title = match event {
-        HookEvent::Rollback(_) => format!("🏳️ {}", app_name),
-        HookEvent::EnvVarsChange(_) => format!("⚙️  {}", app_name),
+        HookEvent::Rollback { .. } => format!("🏳️ {}", app_name),
+        HookEvent::EnvVarsChange { .. } => format!("⚙️  {}", app_name),
     };
 
     let desc = match event {
-        HookEvent::Rollback(v) => format!("Rollback to {}", v),
-        HookEvent::EnvVarsChange(evs) => format!("Environment variables changed: {}", evs),
+        HookEvent::Rollback { version } => format!("Rollback to {}", version),
+        HookEvent::EnvVarsChange { raw_change } => {
+            format!("Environment variables changed: {}", raw_change)
+        }
     };
 
     match plat {
@@ -127,7 +129,9 @@ fn decode_rollback(payload: &ReleaseHookPayload) -> Option<HookEvent> {
         .ok()
         .and_then(|re| re.captures(&payload.data.description))
         .and_then(|cs| cs.name("version"))
-        .map(|m| HookEvent::Rollback(m.as_str().to_owned()))
+        .map(|m| HookEvent::Rollback {
+            version: m.as_str().to_owned(),
+        })
 }
 
 /// Attempt to decode an environment variable-related webhook event from a
@@ -137,7 +141,9 @@ fn decode_env_vars_change(payload: &ReleaseHookPayload) -> Option<HookEvent> {
         .ok()
         .and_then(|re| re.captures(&payload.data.description))
         .and_then(|cs| cs.name("change"))
-        .map(|m| HookEvent::EnvVarsChange(m.as_str().to_owned()))
+        .map(|m| HookEvent::EnvVarsChange {
+            raw_change: m.as_str().to_owned(),
+        })
 }
 
 /// The anticipated payload supplied by Heroku in webhook requests.
@@ -300,12 +306,16 @@ mod tests {
         fn test_rollback() {
             assert_eq!(
                 decode_payload(&payload_from_desc("Rollback to v1234")),
-                Ok(HookEvent::Rollback("v1234".to_string())),
+                Ok(HookEvent::Rollback {
+                    version: "v1234".to_string()
+                }),
             );
 
             assert_eq!(
                 decode_payload(&payload_from_desc("Rollback to some new format")),
-                Ok(HookEvent::Rollback("some new format".to_string())),
+                Ok(HookEvent::Rollback {
+                    version: "some new format".to_string()
+                }),
             );
 
             assert_eq!(
@@ -318,12 +328,16 @@ mod tests {
         fn test_env_vars_change() {
             assert_eq!(
                 decode_payload(&payload_from_desc("Set FOO, BAR config vars")),
-                Ok(HookEvent::EnvVarsChange("Set FOO, BAR".to_string())),
+                Ok(HookEvent::EnvVarsChange {
+                    raw_change: "Set FOO, BAR".to_string()
+                }),
             );
 
             assert_eq!(
                 decode_payload(&payload_from_desc("Some new format config vars")),
-                Ok(HookEvent::EnvVarsChange("Some new format".to_string())),
+                Ok(HookEvent::EnvVarsChange {
+                    raw_change: "Some new format".to_string()
+                }),
             );
 
             assert_eq!(
