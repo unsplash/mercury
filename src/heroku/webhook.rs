@@ -63,14 +63,14 @@ pub async fn forward(deps: &Deps, plat: &Platform, payload: &HookPayload) -> For
             },
         },
         HookPayload::Dyno(x) => match is_dyno_crash(x) {
-            false => ForwardResult::IgnoredAction,
-            true => {
+            None => ForwardResult::IgnoredAction,
+            Some(status_code) => {
                 send(
                     deps,
                     plat,
                     &HookEvent::DynoCrash {
                         name: x.data.name.to_owned(),
-                        status_code: x.data.exit_status,
+                        status_code,
                     },
                     payload,
                 )
@@ -165,11 +165,12 @@ fn decode_env_vars_change(payload: &ReleaseHookPayload) -> Option<HookEvent> {
         })
 }
 
-/// Determine if a dyno event payload corresponds to a relevant crash.
+/// Determines if a dyno event payload corresponds to a relevant crash, and if
+/// so returns the status code.
 ///
 /// This logic is copied from Otto:
 /// <https://github.com/unsplash/otto/blob/38c0fc5cf9a0ea5f1443a2fa5f45c0d837ba83a3/app/routes/hooks/monitor.rb#L17>
-fn is_dyno_crash(payload: &DynoHookPayload) -> bool {
+fn is_dyno_crash(payload: &DynoHookPayload) -> Option<u8> {
     let DynoHookData {
         typ,
         state,
@@ -177,7 +178,7 @@ fn is_dyno_crash(payload: &DynoHookPayload) -> bool {
         ..
     } = &payload.data;
 
-    typ != "run" && state == "crashed" && exit_status > &0
+    exit_status.filter(|code| typ != "run" && state == "crashed" && code > &0)
 }
 
 /// The anticipated payload supplied by Heroku in webhook requests.
@@ -240,7 +241,10 @@ struct DynoHookData {
     #[serde(rename = "type")]
     typ: String,
     state: String,
-    exit_status: u8,
+    /// We need this for `DynoCrash`, however for other types of dyno events it
+    /// can be absent or `null`, and we should still serialise those and return
+    /// 200.
+    exit_status: Option<u8>,
 }
 
 /// Common metadata about the app for which a webhook event fired.
@@ -388,7 +392,7 @@ mod tests {
                     name: "scheduler.8375".to_string(),
                     typ: "scheduler".to_string(),
                     state: "crashed".to_string(),
-                    exit_status: 137,
+                    exit_status: Some(137),
                 },
             });
 
@@ -396,6 +400,144 @@ mod tests {
                 expected,
                 serde_json::from_str(real_redacted_example).unwrap()
             );
+        }
+
+        #[test]
+        fn test_root_payload_dyno_no_status_code() {
+            let real_redacted_example = r#"{
+                "id": "5c930235-d947-4a8d-aefe-2692604d0c9a",
+                "data": {
+                    "id": "d0eb9c96-0529-4f9d-bb4c-cc3382a55180",
+                    "app": {
+                        "id": "b3e4c9d6-3d05-4f2d-98d1-458c358269df",
+                        "name": "my-app"
+                    },
+                    "name": "scheduler.3540",
+                    "size": "Standard-1X",
+                    "type": "scheduler",
+                    "state": "starting",
+                    "command": "/bin/cowsay moo",
+                    "release": {
+                        "id": "9e67f453-d990-4c5f-89d3-c9ca2a70830f",
+                        "version": 7636
+                    },
+                    "attach_url": null,
+                    "created_at": "2023-08-03T17:40:49Z",
+                    "updated_at": "2023-08-03T17:40:49Z"
+                },
+                "actor": {
+                    "id": "6a65fcb0-507d-45ae-85d9-9bb29fe8d234",
+                    "email": "scheduler@addons.heroku.com"
+                },
+                "action": "create",
+                "version": "application/vnd.heroku+json; version=3",
+                "resource": "dyno",
+                "sequence": null,
+                "created_at": "2023-08-03T17:40:49.504132Z",
+                "updated_at": "2023-08-03T17:40:49.504139Z",
+                "published_at": "2023-08-03T17:40:50Z",
+                "previous_data": {},
+                "webhook_metadata": {
+                    "attempt": {
+                        "id": "9c522e4b-46aa-4233-9831-412a69c5357b"
+                    },
+                    "delivery": {
+                        "id": "4505f0a6-9397-4195-8640-33159b48cfb7"
+                    },
+                    "event": {
+                        "id": "5c930235-d947-4a8d-aefe-2692604d0c9a",
+                        "include": "api:dyno"
+                    },
+                    "webhook": {
+                        "id": "f7491c4b-2212-46d5-826f-064489daf9c4"
+                    }
+                }
+            }"#;
+
+            let expected = HookPayload::Dyno(DynoHookPayload {
+                data: DynoHookData {
+                    app: AppData {
+                        name: "my-app".to_string(),
+                    },
+                    name: "scheduler.3540".to_string(),
+                    typ: "scheduler".to_string(),
+                    state: "starting".to_string(),
+                    exit_status: None,
+                },
+            });
+
+            assert_eq!(
+                expected,
+                serde_json::from_str(real_redacted_example).unwrap()
+            );
+        }
+
+        #[test]
+        fn test_root_payload_dyno_null_status_code() {
+            let synthetic_example = r#"{
+                "id": "5c930235-d947-4a8d-aefe-2692604d0c9a",
+                "data": {
+                    "id": "d0eb9c96-0529-4f9d-bb4c-cc3382a55180",
+                    "app": {
+                        "id": "b3e4c9d6-3d05-4f2d-98d1-458c358269df",
+                        "name": "my-app"
+                    },
+                    "name": "scheduler.3540",
+                    "size": "Standard-1X",
+                    "type": "scheduler",
+                    "state": "starting",
+                    "exit_status": null,
+                    "command": "/bin/cowsay moo",
+                    "release": {
+                        "id": "9e67f453-d990-4c5f-89d3-c9ca2a70830f",
+                        "version": 7636
+                    },
+                    "attach_url": null,
+                    "created_at": "2023-08-03T17:40:49Z",
+                    "updated_at": "2023-08-03T17:40:49Z"
+                },
+                "actor": {
+                    "id": "6a65fcb0-507d-45ae-85d9-9bb29fe8d234",
+                    "email": "scheduler@addons.heroku.com"
+                },
+                "action": "create",
+                "version": "application/vnd.heroku+json; version=3",
+                "resource": "dyno",
+                "sequence": null,
+                "created_at": "2023-08-03T17:40:49.504132Z",
+                "updated_at": "2023-08-03T17:40:49.504139Z",
+                "published_at": "2023-08-03T17:40:50Z",
+                "previous_data": {},
+                "webhook_metadata": {
+                    "attempt": {
+                        "id": "9c522e4b-46aa-4233-9831-412a69c5357b"
+                    },
+                    "delivery": {
+                        "id": "4505f0a6-9397-4195-8640-33159b48cfb7"
+                    },
+                    "event": {
+                        "id": "5c930235-d947-4a8d-aefe-2692604d0c9a",
+                        "include": "api:dyno"
+                    },
+                    "webhook": {
+                        "id": "f7491c4b-2212-46d5-826f-064489daf9c4"
+                    }
+                }
+            }"#;
+
+            let expected = HookPayload::Dyno(DynoHookPayload {
+                data: DynoHookData {
+                    app: AppData {
+                        name: "my-app".to_string(),
+                    },
+                    name: "scheduler.3540".to_string(),
+                    typ: "scheduler".to_string(),
+                    state: "starting".to_string(),
+                    exit_status: None,
+                },
+            });
+
+            assert_eq!(expected, serde_json::from_str(synthetic_example).unwrap());
         }
     }
 
