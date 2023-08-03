@@ -23,10 +23,10 @@ The token will be validated against the `$SLACK_TOKEN` found on startup.
 
 ### Heroku Webhooks
 
-Additionally Mercury supports monitoring Heroku webhooks for rollbacks and environment variable changes. The webhook must be created manually with the URL target pointed at Mercury.
+Additionally Mercury supports monitoring Heroku webhooks for dyno crashes, rollbacks, and environment variable changes. The webhook must be created manually with the URL target pointed at Mercury.
 
 ```console
-$ heroku webhooks:add -l notify -i api:release -a <HEROKU_APP> -s <HEROKU_SECRET> -u https://mercury.proxy.unsplash.com/api/v1/heroku/hook?platform=slack&channel=playground
+$ heroku webhooks:add -l notify -i api:dyno,api:release -a <HEROKU_APP> -s <HEROKU_SECRET> -u https://mercury.proxy.unsplash.com/api/v1/heroku/hook?platform=slack&channel=playground
 ```
 
 Webhooks will only successfully authenticate if the secret is the same on both sides. Mercury looks for the secret on startup at `$HEROKU_SECRET`. This feature, thus also this environment variable, is optional.

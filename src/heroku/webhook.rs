@@ -30,6 +30,8 @@ pub enum HookEvent {
     Rollback { version: String },
     /// From the entity `api:release`.
     EnvVarsChange { raw_change: String },
+    /// From the entity `api:dyno`.
+    DynoCrash { name: String, status_code: u8 },
 }
 
 /// The result of attempting to forward a valid webhook.
@@ -60,6 +62,21 @@ pub async fn forward(deps: &Deps, plat: &Platform, payload: &HookPayload) -> For
                 Ok(evt) => send(deps, plat, &evt, payload).await,
             },
         },
+        HookPayload::Dyno(x) => match is_dyno_crash(x) {
+            false => ForwardResult::IgnoredAction,
+            true => {
+                send(
+                    deps,
+                    plat,
+                    &HookEvent::DynoCrash {
+                        name: x.data.name.to_owned(),
+                        status_code: x.data.exit_status,
+                    },
+                    payload,
+                )
+                .await
+            }
+        },
     }
 }
 
@@ -70,19 +87,21 @@ async fn send(
     event: &HookEvent,
     payload: &HookPayload,
 ) -> ForwardResult {
-    let app_name = match payload {
-        HookPayload::Release(x) => &x.data.app.name,
-    };
+    let app_name = &get_app_data(payload).name;
 
     let title = match event {
         HookEvent::Rollback { .. } => format!("🏳️ {}", app_name),
         HookEvent::EnvVarsChange { .. } => format!("⚙️  {}", app_name),
+        HookEvent::DynoCrash { .. } => format!("☢️  {}", app_name),
     };
 
     let desc = match event {
         HookEvent::Rollback { version } => format!("Rollback to {}", version),
         HookEvent::EnvVarsChange { raw_change } => {
             format!("Environment variables changed: {}", raw_change)
+        }
+        HookEvent::DynoCrash { name, status_code } => {
+            format!("Dyno {} crashed with status code {}", name, status_code)
         }
     };
 
@@ -146,6 +165,21 @@ fn decode_env_vars_change(payload: &ReleaseHookPayload) -> Option<HookEvent> {
         })
 }
 
+/// Determine if a dyno event payload corresponds to a relevant crash.
+///
+/// This logic is copied from Otto:
+/// <https://github.com/unsplash/otto/blob/38c0fc5cf9a0ea5f1443a2fa5f45c0d837ba83a3/app/routes/hooks/monitor.rb#L17>
+fn is_dyno_crash(payload: &DynoHookPayload) -> bool {
+    let DynoHookData {
+        typ,
+        state,
+        exit_status,
+        ..
+    } = &payload.data;
+
+    typ != "run" && state == "crashed" && exit_status > &0
+}
+
 /// The anticipated payload supplied by Heroku in webhook requests.
 ///
 /// This isn't very well documented. An example request is provided here:
@@ -160,6 +194,8 @@ fn decode_env_vars_change(payload: &ReleaseHookPayload) -> Option<HookEvent> {
 pub enum HookPayload {
     #[serde(rename = "release")]
     Release(ReleaseHookPayload),
+    #[serde(rename = "dyno")]
+    Dyno(DynoHookPayload),
 }
 
 /// The payload supplied by Heroku for the `api:release` entity type.
@@ -167,6 +203,12 @@ pub enum HookPayload {
 pub struct ReleaseHookPayload {
     data: ReleaseHookData,
     pub action: ReleaseHookAction,
+}
+
+/// The payload supplied by Heroku for the `api:dyno` entity type.
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct DynoHookPayload {
+    data: DynoHookData,
 }
 
 /// The action within an `api:release` webhook event lifecycle.
@@ -190,10 +232,28 @@ struct ReleaseHookData {
     description: String,
 }
 
+/// General information about an `api:release` webhook event.
+#[derive(Debug, PartialEq, Deserialize)]
+struct DynoHookData {
+    app: AppData,
+    name: String,
+    #[serde(rename = "type")]
+    typ: String,
+    state: String,
+    exit_status: u8,
+}
+
 /// Common metadata about the app for which a webhook event fired.
 #[derive(Debug, PartialEq, Deserialize)]
 struct AppData {
     name: String,
+}
+
+fn get_app_data(payload: &HookPayload) -> &AppData {
+    match payload {
+        HookPayload::Release(x) => &x.data.app,
+        HookPayload::Dyno(x) => &x.data.app,
+    }
 }
 
 #[cfg(test)]
@@ -204,7 +264,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn test_root_payload() {
+        fn test_root_payload_release() {
             let real_redacted_example = r#"{
                 "id": "66a9e685-e1f3-4f9f-9177-a024fb5f0902",
                 "data": {
@@ -278,6 +338,58 @@ mod tests {
                     description: "Deploy 69eec518".to_string(),
                 },
                 action: ReleaseHookAction::Update,
+            });
+
+            assert_eq!(
+                expected,
+                serde_json::from_str(real_redacted_example).unwrap()
+            );
+        }
+
+        #[test]
+        fn test_root_payload_dyno() {
+            let real_redacted_example = r#"{
+                "id": "292a769d-53d8-4edd-ace4-017a967653e1",
+                "created_at": "2023-08-03T14:19:07Z",
+                "data": {
+                    "id": "ab9fece7-41cc-4f22-8b73-de8c1a7a52b5",
+                    "app": {
+                        "id": "b3e4c9d6-3d05-4f2d-98d1-458c358269df",
+                        "name": "my-app"
+                    },
+                    "release": {
+                        "id": "3a7a5c18-b1ac-4830-9efb-5b68551e85f0",
+                        "version": 7634
+                    },
+                    "command": "/bin/cowsay moo",
+                    "size": "Standard-1X",
+                    "exit_status": 137,
+                    "management": "run:detached",
+                    "state": "crashed",
+                    "type": "scheduler",
+                    "name": "scheduler.8375"
+                },
+                "actor": {
+                  "id": "1030c06a-bcbe-4738-9134-89af5c717fb1",
+                  "email": "noreply+webhooks@heroku.com"
+                },
+                "previous_data": {},
+                "published_at": null,
+                "resource": "dyno",
+                "action": "destroy",
+                "version": "application/vnd.heroku+json; version=3"
+            }"#;
+
+            let expected = HookPayload::Dyno(DynoHookPayload {
+                data: DynoHookData {
+                    app: AppData {
+                        name: "my-app".to_string(),
+                    },
+                    name: "scheduler.8375".to_string(),
+                    typ: "scheduler".to_string(),
+                    state: "crashed".to_string(),
+                    exit_status: 137,
+                },
             });
 
             assert_eq!(
