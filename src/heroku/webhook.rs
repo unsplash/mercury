@@ -69,15 +69,13 @@ async fn send(
     let app_name = &payload.data.app.name;
 
     let title = match event {
-        HookEvent::Rollback(_) => format!("Rollback on {}", app_name),
-        HookEvent::EnvVarsChange(_) => {
-            format!("Environment variables changed on {}", app_name)
-        }
+        HookEvent::Rollback(_) => format!("🏳️ {}", app_name),
+        HookEvent::EnvVarsChange(_) => format!("⚙️  {}", app_name),
     };
 
     let desc = match event {
-        HookEvent::Rollback(v) => format!("To {}", v),
-        HookEvent::EnvVarsChange(evs) => evs.to_string(),
+        HookEvent::Rollback(v) => format!("Rollback to {}", v),
+        HookEvent::EnvVarsChange(evs) => format!("Environment variables changed: {}", evs),
     };
 
     match plat {
