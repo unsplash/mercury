@@ -30,7 +30,7 @@ pub enum HookEvent {
     Rollback { version: String },
     /// From the entity `api:release`.
     EnvVarsChange { raw_change: String },
-    /// From the entity `api:dyno`.
+    /// From the entity `dyno` (NB *not* `api:dyno`).
     DynoCrash { name: String, status_code: u8 },
 }
 
@@ -135,7 +135,7 @@ async fn send(
 /// Attempt to decode a valid webhook payload into a supported [HookEvent].
 /// Returns the description that failed decoding upon failure.
 ///
-/// There's no indication that these description are stable on Heroku's side.
+/// There's no indication that these descriptions are stable on Heroku's side.
 pub fn decode_release_payload(payload: &ReleaseHookPayload) -> Result<HookEvent, String> {
     decode_rollback(payload)
         .or_else(|| decode_env_vars_change(payload))
@@ -206,7 +206,7 @@ pub struct ReleaseHookPayload {
     pub action: ReleaseHookAction,
 }
 
-/// The payload supplied by Heroku for the `api:dyno` entity type.
+/// The payload supplied by Heroku for the `dyno` entity type.
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct DynoHookPayload {
     data: DynoHookData,

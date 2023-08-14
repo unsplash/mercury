@@ -32,7 +32,7 @@ pub fn heroku_router() -> Router<Deps> {
 ///
 /// Accepts a [HookPayload] in `application/json` format. Valid events are
 /// forwarded to the specified platform. This feature is potentially
-/// temperamental; see [decode_payload].
+/// temperamental; see [decode_release_payload].
 async fn webhook_handler(
     State(deps): State<Deps>,
     TypedHeader(content_type): TypedHeader<headers::ContentType>,
