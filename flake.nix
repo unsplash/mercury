@@ -19,10 +19,10 @@
           cargoLock.lockFile = ./Cargo.lock;
           nativeBuildInputs = with pkgs; [
             pkg-config
+            darwin.apple_sdk.frameworks.Security
           ];
           buildInputs = with pkgs; [
             openssl
-            darwin.apple_sdk.frameworks.Security
           ];
         };
 
