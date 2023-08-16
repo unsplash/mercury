@@ -12,6 +12,10 @@
           config.allowUnfreePredicate = pkg: nixpkgs.lib.getName pkg == "ngrok";
         };
 
+        darwinDeps = with pkgs; lib.optionals stdenv.isDarwin [
+          darwin.apple_sdk.frameworks.Security
+        ];
+
         app = pkgs.rustPlatform.buildRustPackage {
           pname = "mercury";
           version = "0.0.0";
@@ -19,11 +23,10 @@
           cargoLock.lockFile = ./Cargo.lock;
           nativeBuildInputs = with pkgs; [
             pkg-config
-            darwin.apple_sdk.frameworks.Security
           ];
           buildInputs = with pkgs; [
             openssl
-          ];
+          ] ++ darwinDeps;
         };
 
         img = pkgs.dockerTools.streamLayeredImage {
