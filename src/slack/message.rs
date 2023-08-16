@@ -104,20 +104,25 @@ fn is_not_in_channel(res: &SlackError) -> bool {
 /// including formatting.
 fn build_blocks(msg: &Message) -> Vec<Block> {
     let mut xs = Vec::with_capacity(3);
+    let desc = match &msg.link {
+        // <http://www.example.com|This message *is* a link>
+        Some(link) => fmt_link(link, &msg.desc),
+        None => msg.desc.to_owned(),
+    };
 
-    xs.push(TextObject::Plaintext(msg.desc.to_owned()));
+    xs.push(Block::Section(TextObject::Mrkdwn(desc)));
 
-    if let Some(link) = &msg.link {
-        // We shouldn't be able to both parse and print something as a `Url` and
-        // also achieve mrkdwn formatting.
-        xs.push(TextObject::Mrkdwn(fmt_link(link)));
-    }
+    // if let Some(link) = &msg.link {
+    //     // We shouldn't be able to both parse and print something as a `Url` and
+    //     // also achieve mrkdwn formatting.
+    //     xs.push(TextObject::Mrkdwn(fmt_link(link)));
+    // }
 
-    if let Some(cc) = &msg.cc {
-        xs.push(TextObject::Mrkdwn(fmt_mention(cc)));
-    }
+    // if let Some(cc) = &msg.cc {
+    //     xs.push(TextObject::Mrkdwn(fmt_mention(cc)));
+    // }
 
-    vec![Block::Context(xs)]
+    xs
 }
 
 fn build_notif_text(msg: &Message) -> String {
@@ -139,6 +144,6 @@ fn fmt_mention(m: &Mention) -> String {
 /// );
 /// ```
 /// Format a [Url] to Slack mrkdwn syntax, expressed as an emoji.
-fn fmt_link(u: &Url) -> String {
-    format!("<{}|{}>", u, "↗")
+fn fmt_link(u: &Url, m: &str) -> String {
+    format!("<{}|{}>", u, m)
 }
