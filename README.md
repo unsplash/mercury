@@ -1,6 +1,8 @@
 # Mercury
 
-The guide of souls to the underworld [^1]. An alternative notification system to [Otto](https://github.com/unsplash/otto).
+The guide of souls to the underworld [^1].
+
+Mercury is a secure, general-purpose notification system supporting arbitrary messaging to Slack as well as alerting in response to Heroku webhooks.
 
 ## API
 
@@ -8,7 +10,7 @@ Getting started with Mercury as a consumer.
 
 ### Direct Messaging
 
-Mercury is designed for easy plug and play in CI, which typically "knows" when something is deployed, broken, etc.
+Mercury is designed for easy plug and play in CI, which can typically act as a source of truth.
 
 ```sh
 curl https://mercury.proxy.unsplash.com/api/v1/slack -X POST \
@@ -33,14 +35,9 @@ Webhooks will only successfully authenticate if the secret is the same on both s
 
 ## Contributing
 
-Mercury is written in Rust. This offers a few benefits including:
+Mercury is developed with Unsplash's particular needs in mind, however contributions are welcome!
 
-- Outstanding first-party tooling and reproducible builds via Nix.
-- A strong, expressive type system inspired by functional languages.
-- More approachable to contributors outside of the Web team than something like Haskell.
-- Acts as a test bed for Rust at Unsplash; timely with [Fastly C@E](https://developer.fastly.com/learning/compute/rust/) in mind.
-
-The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/), which is recommended for development:
+Mercury is written in Rust. The Nix shell provides the necessary tooling to build with [Cargo](https://doc.rust-lang.org/stable/cargo/), which is recommended for development:
 
 ```console
 $ cargo run
@@ -56,7 +53,7 @@ To develop against Heroku's webhooks Heroku will need some way of reaching your 
 
 ## Hosting
 
-Mercury is hosted on AWS. Infrastructure is defined in [api-ops](https://github.com/unsplash/api-ops).
+Unsplash's instance of Mercury is hosted on AWS. Infrastructure is defined in [api-ops](https://github.com/unsplash/api-ops).
 
 We leverage Nix's reproducible builds to build a hermetic Docker image which can principally be deployed anywhere:
 
