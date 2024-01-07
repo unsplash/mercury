@@ -23,6 +23,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v22
+      - uses: ./.github/actions/cargo-cache
       - run: nix develop -c cargo check
 
   test:
@@ -32,6 +33,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v22
+      - uses: ./.github/actions/cargo-cache
       - run: nix develop -c cargo test
 
   lint:
@@ -41,6 +43,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: rm -rf ~/.cargo/
       - uses: cachix/install-nix-action@v22
+      - uses: ./.github/actions/cargo-cache
       # See: https://github.com/rust-lang/rust-clippy/issues/1209
       - run: RUSTFLAGS="-D warnings" nix develop -c cargo clippy --all-targets
 

@@ -1,0 +1,18 @@
+name: Cargo registry and build caches
+runs:
+  using: composite
+  steps:
+    - name: Cache registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry/
+        key: cargo-registry-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+        restore-keys: |
+          cargo-registry-${{ runner.os }}
+    - name: Cache build
+      uses: actions/cache@v3
+      with:
+        path: ./target/
+        key: target-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          target-${{ runner.os }}
