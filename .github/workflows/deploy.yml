@@ -18,8 +18,8 @@ jobs:
     env:
       AWS_DEFAULT_REGION: us-west-2
     steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v25
 
       - name: Build
         # Docker is preinstalled.
@@ -73,15 +73,15 @@ jobs:
       id-token: write
       pages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
       - uses: ./.github/actions/cargo-cache
       - run: |
           nix develop -c cargo doc --no-deps
           rm ./target/doc/.lock
           echo '<meta http-equiv="refresh" content="0; url=mercury">' > ./target/doc/index.html
-      - uses: actions/upload-pages-artifact@v1
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: ./target/doc/
-      - uses: actions/deploy-pages@v2
+      - uses: actions/deploy-pages@v4

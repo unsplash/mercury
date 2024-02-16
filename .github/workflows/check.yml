@@ -12,17 +12,17 @@ jobs:
     name: Validate Nix
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v25
       - run: nix flake check
 
   check:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
       - uses: ./.github/actions/cargo-cache
       - run: nix develop -c cargo check
 
@@ -30,9 +30,9 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
       - uses: ./.github/actions/cargo-cache
       - run: nix develop -c cargo test
 
@@ -40,9 +40,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
       - uses: ./.github/actions/cargo-cache
       # See: https://github.com/rust-lang/rust-clippy/issues/1209
       - run: RUSTFLAGS="-D warnings" nix develop -c cargo clippy --all-targets
@@ -51,7 +51,7 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rm -rf ~/.cargo/
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
       - run: nix develop -c cargo fmt --check
