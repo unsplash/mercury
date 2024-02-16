@@ -10,12 +10,12 @@ use crate::{
 };
 use axum::{
     extract::{self, State},
-    headers,
     http::StatusCode,
     response::IntoResponse,
     routing::post,
-    Router, TypedHeader,
+    Router,
 };
+use axum_extra::{headers, TypedHeader};
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tracing::error;
 
