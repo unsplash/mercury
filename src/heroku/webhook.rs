@@ -231,6 +231,7 @@ pub enum ReleaseHookAction {
 struct ReleaseHookData {
     app: AppData,
     description: String,
+    user: UserData,
 }
 
 /// General information about an `api:release` webhook event.
@@ -251,6 +252,12 @@ struct DynoHookData {
 #[derive(Debug, PartialEq, Deserialize)]
 struct AppData {
     name: String,
+}
+
+/// Information about the user who enacted the change.
+#[derive(Debug, PartialEq, Deserialize)]
+struct UserData {
+    email: String,
 }
 
 fn get_app_data(payload: &HookPayload) -> &AppData {
@@ -285,7 +292,7 @@ mod tests {
                     },
                     "user": {
                         "id": "71def50e-da83-453a-bba3-46b4e26911b0",
-                        "email": "hello@example.com"
+                        "email": "hodor@unsplash.com"
                     },
                     "stack": "heroku-20",
                     "status": "succeeded",
@@ -340,6 +347,9 @@ mod tests {
                         name: "my-app".to_string(),
                     },
                     description: "Deploy 69eec518".to_string(),
+                    user: UserData {
+                        email: "hodor@unsplash.com".to_string(),
+                    },
                 },
                 action: ReleaseHookAction::Update,
             });
@@ -551,6 +561,9 @@ mod tests {
                         name: "any".to_string(),
                     },
                     description: desc.to_string(),
+                    user: UserData {
+                        email: "hodor@unsplash.com".to_string(),
+                    },
                 },
                 action: ReleaseHookAction::Update,
             }
