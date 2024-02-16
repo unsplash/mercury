@@ -8,12 +8,12 @@ use super::{auth::*, webhook::*, Platform};
 use crate::{router::Deps, slack::router::handle_slack_err};
 use axum::{
     extract::{self, State},
-    headers,
     http::{header::HeaderMap, StatusCode},
     response::IntoResponse,
     routing::post,
-    Router, TypedHeader,
+    Router,
 };
+use axum_extra::{headers, TypedHeader};
 use hyper::body::Bytes;
 use tracing::{info, warn};
 

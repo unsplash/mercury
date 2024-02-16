@@ -9,7 +9,10 @@ use heroku::HerokuSecret;
 use router::Deps;
 use slack::{api::API_BASE, SlackAccessToken, SlackClient};
 use std::{env, net::SocketAddr, sync::Arc};
-use tokio::sync::{oneshot, Mutex};
+use tokio::{
+    net::TcpListener,
+    sync::{oneshot, Mutex},
+};
 use tracing::{info, warn};
 
 mod de;
@@ -70,10 +73,12 @@ async fn server(addr: SocketAddr, slack_token: SlackAccessToken, rx: oneshot::Re
         heroku_secret,
     };
 
+    let listener = TcpListener::bind(&addr)
+        .await
+        .unwrap_or_else(|_| panic!("Failed to bind to {}", addr));
     info!("Listening on {}", addr.to_string());
 
-    axum::Server::bind(&addr)
-        .serve(router::new(deps).into_make_service())
+    axum::serve(listener, router::new(deps).into_make_service())
         .with_graceful_shutdown(async {
             rx.await.ok();
         })
@@ -112,8 +117,9 @@ fn print_in_color() -> bool {
 
 #[cfg(test)]
 mod tests {
+    use reqwest::StatusCode;
+
     use super::*;
-    use axum::http::StatusCode;
 
     #[tokio::test]
     async fn test_real_health_api() {

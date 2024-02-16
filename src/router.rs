@@ -77,8 +77,8 @@ mod tests {
         mockito::Server::new_async().await
     }
 
-    async fn plaintext_body(body: axum::body::BoxBody) -> String {
-        let bytes = hyper::body::to_bytes(body).await.unwrap();
+    async fn plaintext_body(body: axum::body::Body) -> String {
+        let bytes = axum::body::to_bytes(body, usize::MAX).await.unwrap();
         String::from_utf8(bytes.to_vec()).unwrap()
     }
 
