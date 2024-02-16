@@ -27,9 +27,9 @@ use serde::Deserialize;
 #[derive(Debug, PartialEq, Eq)]
 pub enum HookEvent {
     /// From the entity `api:release`.
-    Rollback { version: String },
+    Rollback { author: String, version: String },
     /// From the entity `api:release`.
-    EnvVarsChange { raw_change: String },
+    EnvVarsChange { author: String, raw_change: String },
     /// From the entity `dyno` (NB *not* `api:dyno`).
     DynoCrash { name: String, status_code: u8 },
 }
@@ -96,9 +96,9 @@ async fn send(
     };
 
     let desc = match event {
-        HookEvent::Rollback { version } => format!("Rollback to {}", version),
-        HookEvent::EnvVarsChange { raw_change } => {
-            format!("Environment variables changed: {}", raw_change)
+        HookEvent::Rollback { version, author } => format!("Rollback to {} ({})", version, author),
+        HookEvent::EnvVarsChange { raw_change, author } => {
+            format!("Environment variables changed: {} ({})", raw_change, author)
         }
         HookEvent::DynoCrash { name, status_code } => {
             format!("Dyno {} crashed with status code {}", name, status_code)
@@ -149,6 +149,7 @@ fn decode_rollback(payload: &ReleaseHookPayload) -> Option<HookEvent> {
         .and_then(|re| re.captures(&payload.data.description))
         .and_then(|cs| cs.name("version"))
         .map(|m| HookEvent::Rollback {
+            author: payload.data.user.email.to_owned(),
             version: m.as_str().to_owned(),
         })
 }
@@ -161,6 +162,7 @@ fn decode_env_vars_change(payload: &ReleaseHookPayload) -> Option<HookEvent> {
         .and_then(|re| re.captures(&payload.data.description))
         .and_then(|cs| cs.name("change"))
         .map(|m| HookEvent::EnvVarsChange {
+            author: payload.data.user.email.to_owned(),
             raw_change: m.as_str().to_owned(),
         })
 }
@@ -574,6 +576,7 @@ mod tests {
             assert_eq!(
                 decode_release_payload(&payload_from_desc("Rollback to v1234")),
                 Ok(HookEvent::Rollback {
+                    author: "hodor@unsplash.com".to_string(),
                     version: "v1234".to_string()
                 }),
             );
@@ -581,6 +584,7 @@ mod tests {
             assert_eq!(
                 decode_release_payload(&payload_from_desc("Rollback to some new format")),
                 Ok(HookEvent::Rollback {
+                    author: "hodor@unsplash.com".to_string(),
                     version: "some new format".to_string()
                 }),
             );
@@ -596,6 +600,7 @@ mod tests {
             assert_eq!(
                 decode_release_payload(&payload_from_desc("Set FOO, BAR config vars")),
                 Ok(HookEvent::EnvVarsChange {
+                    author: "hodor@unsplash.com".to_string(),
                     raw_change: "Set FOO, BAR".to_string()
                 }),
             );
@@ -603,6 +608,7 @@ mod tests {
             assert_eq!(
                 decode_release_payload(&payload_from_desc("Some new format config vars")),
                 Ok(HookEvent::EnvVarsChange {
+                    author: "hodor@unsplash.com".to_string(),
                     raw_change: "Some new format".to_string()
                 }),
             );
