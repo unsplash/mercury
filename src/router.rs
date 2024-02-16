@@ -833,11 +833,14 @@ mod tests {
                     "app": {
                         "name": "any"
                     },
-                    "description": "any"
+                    "description": "any",
+                    "user": {
+                        "email": "hodor@unsplash.com"
+                    }
                 },
                 "action": "update"
             }"#;
-            let sig = "IsNt6nWoGu9tBYt1fKKi3SjiLhMp6Fk/TYsFCehd6LM=";
+            let sig = "0+jCzQsgvzi0SL0haDhB18ttbTNEYYlrwhtpL0FEVGw=";
 
             let req = Request::builder()
                 .method("POST")
@@ -861,11 +864,14 @@ mod tests {
                     "app": {
                         "name": "any"
                     },
-                    "description": "any"
+                    "description": "any",
+                    "user": {
+                        "email": "hodor@unsplash.com"
+                    }
                 },
                 "action": "create"
             }"#;
-            let sig = "WKv86Cw9YFrEpu8vkCw21QfsQ7FT0f8502q1F9EEQ6c=";
+            let sig = "F5ArFnV9sfXsDmk9ubM24fu6gVVxEXl1TOdt1XTVokg=";
 
             let req = Request::builder()
                 .method("POST")
@@ -889,11 +895,14 @@ mod tests {
                     "app": {
                         "name": "any"
                     },
-                    "description": "Rollback to v1234"
+                    "description": "Rollback to v1234",
+                    "user": {
+                        "email": "hodor@unsplash.com"
+                    }
                 },
                 "action": "update"
             }"#;
-            let sig = "mMGRnv4/Wjm2kyEbI0vqR//Kmt8NaV3Rj9xiMBdvlUU=";
+            let sig = "GxMZ9dos5w6r9V0JTDyeWprKmd3JW+i4otfkkDV463M=";
 
             let req = Request::builder()
                 .method("POST")
@@ -943,11 +952,14 @@ mod tests {
                     "app": {
                         "name": "any"
                     },
-                    "description": "Rollback to v1234"
+                    "description": "Rollback to v1234",
+                    "user": {
+                        "email": "hodor@unsplash.com"
+                    }
                 },
                 "action": "update"
             }"#;
-            let sig = "mMGRnv4/Wjm2kyEbI0vqR//Kmt8NaV3Rj9xiMBdvlUU=";
+            let sig = "GxMZ9dos5w6r9V0JTDyeWprKmd3JW+i4otfkkDV463M=";
 
             let req = Request::builder()
                 .method("POST")
@@ -997,11 +1009,14 @@ mod tests {
                     "app": {
                         "name": "any"
                     },
-                    "description": "Rollback to v1234"
+                    "description": "Rollback to v1234",
+                    "user": {
+                        "email": "hodor@unsplash.com"
+                    }
                 },
                 "action": "update"
             }"#;
-            let sig = "mMGRnv4/Wjm2kyEbI0vqR//Kmt8NaV3Rj9xiMBdvlUU=";
+            let sig = "GxMZ9dos5w6r9V0JTDyeWprKmd3JW+i4otfkkDV463M=";
 
             let req = Request::builder()
                 .method("POST")
