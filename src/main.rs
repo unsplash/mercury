@@ -42,7 +42,7 @@ async fn main() {
 
     let slack_token = env::var("SLACK_TOKEN")
         .map(SlackAccessToken)
-        .expect("No $HEROKU_SECRET environment variable found");
+        .expect("No $SLACK_TOKEN environment variable found");
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
