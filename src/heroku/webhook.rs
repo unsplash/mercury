@@ -226,7 +226,7 @@ pub enum ReleaseHookAction {
     Other,
 }
 
-/// General information about an `api:release` webhook event.
+/// General information about an `api:release` entity type.
 #[derive(Debug, PartialEq, Deserialize)]
 struct ReleaseHookData {
     app: AppData,
@@ -234,7 +234,7 @@ struct ReleaseHookData {
     user: UserData,
 }
 
-/// General information about an `api:release` webhook event.
+/// General information about an `dyno` entity type.
 #[derive(Debug, PartialEq, Deserialize)]
 struct DynoHookData {
     app: AppData,
