@@ -25,6 +25,12 @@ jobs:
         # Docker is preinstalled.
         run: nix build .#dockerImage && ./result | docker load
 
+      - name: Assume AWS role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT }}:role/mercury-build-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Push
         run: |
           nix develop .#ops -c \
@@ -33,9 +39,7 @@ jobs:
           docker tag mercury "$REPO":latest
           docker push --all-tags "$REPO"
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PUSHER }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PUSHER }}
-          REPO: 060568373025.dkr.ecr.us-west-2.amazonaws.com/mercury
+          REPO: ${{ vars.AWS_ACCOUNT }}.dkr.ecr.us-west-2.amazonaws.com/mercury
 
       - name: Deploy
         run: |
@@ -43,21 +47,18 @@ jobs:
           # same `latest` image tag.
           nix develop .#ops -c \
             aws ecs update-service --no-cli-pager \
-              --cluster shared-cluster-staging \
+              --cluster ${{ vars.TOOLS_CLUSTER }} \
               --service mercury-service \
               --force-new-deployment
           nix develop .#ops -c \
             aws ecs wait services-stable \
-              --cluster shared-cluster-staging \
+              --cluster ${{ vars.TOOLS_CLUSTER }} \
               --services mercury-service
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEPLOYER }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEPLOYER }}
 
       # This (emphasis on `--fail-with-body`) acts as a sort of final E2E test.
       - name: Notify (Test)
         run: |
-          curl https://mercury.proxy.unsplash.com/api/v1/slack --fail-with-body -X POST \
+          curl ${{ vars.MERCURY_ENDPOINT }}/api/v1/slack --fail-with-body -X POST \
             --oauth2-bearer '${{ secrets.MERCURY_SLACK_TOKEN }}' \
             -d channel=playground \
             -d title='🚀 Mercury' \
