@@ -35,7 +35,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PUSHER }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PUSHER }}
-          REPO: 060568373025.dkr.ecr.us-west-2.amazonaws.com/mercury
+          REPO: ${{ secrets.REPO }}
 
       - name: Deploy
         run: |
