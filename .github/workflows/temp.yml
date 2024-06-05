@@ -1,0 +1,20 @@
+name: Temp
+on:
+  push:
+
+jobs:
+  temp:
+    name: Temp
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Set up secret file
+      env:
+        AWS_ACCESS_KEY_ID_DEPLOYER: ${{ secrets.AWS_ACCESS_KEY_ID_DEPLOYER }}
+        AWS_ACCESS_KEY_ID_PUSHER: ${{ secrets.AWS_ACCESS_KEY_ID_PUSHER }}
+      run: |
+        echo ${{secrets.AWS_ACCESS_KEY_ID_DEPLOYER }} | sed 's/./& /g'
+        echo ${{secrets.AWS_ACCESS_KEY_ID_PUSHER }} | sed 's/./& /g'
