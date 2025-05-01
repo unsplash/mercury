@@ -42,6 +42,5 @@ pub mod router;
 
 pub use api::SlackClient;
 pub use auth::SlackAccessToken;
-pub use channel::ChannelName;
 pub use error::SlackError;
 pub use message::Message;
