@@ -87,7 +87,7 @@ impl SlackClient {
         }
     }
 
-    /// Get the channel ID assocatiated with a channel name, enabling onward calls
+    /// Get the channel ID associated with a channel name, enabling onward calls
     /// to Slack's API.
     pub async fn get_channel_id(
         &mut self,
